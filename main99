@@ -1027,6 +1027,7 @@ function Menu.DrawItem(x, itemY, width, itemHeight, item, isSelected)
 end
 
 function Menu.DrawCategories()
+    Menu.EnsureCategoryIconTextures()
     if Menu.OpenedCategory then
         local category = Menu.Categories[Menu.OpenedCategory]
         if not category or not category.hasTabs or not category.tabs then
@@ -6964,20 +6965,69 @@ function Menu.DrawFooter()
 end
 
 
+
+Menu.CategoryIconTextures = Menu.CategoryIconTextures or {}
+
+function Menu.LoadLocalTexture(path)
+    if not path or path == "" or not Susano or not Susano.LoadTextureFromBuffer then return nil end
+    local ok, texId = pcall(function()
+        if io and io.open then
+            local f = io.open(path, "rb")
+            if f then
+                local data = f:read("*a")
+                f:close()
+                if data and #data > 0 then
+                    local textureId = Susano.LoadTextureFromBuffer(data)
+                    if type(textureId) == "table" then
+                        return textureId[1] or textureId.textureId or textureId.id
+                    end
+                    return textureId
+                end
+            end
+        end
+        return nil
+    end)
+    if ok and texId and texId ~= 0 then
+        return texId
+    end
+    return nil
+end
+
+function Menu.EnsureCategoryIconTextures()
+    if next(Menu.CategoryIconTextures) ~= nil then return end
+    Menu.CategoryIconTextures.player = Menu.LoadLocalTexture("player_white.png")
+    Menu.CategoryIconTextures.online = Menu.LoadLocalTexture("online_white.png")
+    Menu.CategoryIconTextures.vehicle = Menu.LoadLocalTexture("vehicle_white.png")
+    Menu.CategoryIconTextures.visual = Menu.LoadLocalTexture("visual_white.png")
+    Menu.CategoryIconTextures.combat = Menu.LoadLocalTexture("combat_white.png")
+    Menu.CategoryIconTextures.misc = Menu.LoadLocalTexture("misc_white.png")
+    Menu.CategoryIconTextures.settings = Menu.LoadLocalTexture("settings_white.png")
+end
+
+function Menu.GetCategorySidebarIconKey(name)
+    local n = string.lower(tostring(name or ""))
+    if n:find("player") or n:find("self") then return "player" end
+    if n:find("online") then return "online" end
+    if n:find("vehicle") then return "vehicle" end
+    if n:find("visual") then return "visual" end
+    if n:find("weapon") or n:find("combat") then return "combat" end
+    if n:find("misc") or n:find("server") then return "misc" end
+    if n:find("setting") then return "settings" end
+    return nil
+end
+
 -- ===== CATEGORY ICON SIDEBAR OVERRIDE =====
 Menu.DrawCategoriesBase = Menu.DrawCategories
 
 function Menu.GetCategorySidebarIcon(name)
-    local n = string.lower(tostring(name or ""))
-    if n:find("player") or n:find("self") then return "👤" end
-    if n:find("online") then return "👥" end
-    if n:find("vehicle") then return "🚗" end
-    if n:find("visual") then return "👁" end
-    if n:find("weapon") or n:find("combat") then return "🔫" end
-    if n:find("misc") then return "🛡" end
-    if n:find("exploit") or n:find("troll") then return "💣" end
-    if n:find("setting") then return "⚙" end
-    if n:find("server") then return "🌐" end
+    local key = Menu.GetCategorySidebarIconKey(name)
+    if key == "player" then return "P" end
+    if key == "online" then return "O" end
+    if key == "vehicle" then return "V" end
+    if key == "visual" then return "E" end
+    if key == "combat" then return "W" end
+    if key == "misc" then return "M" end
+    if key == "settings" then return "S" end
     return "•"
 end
 
@@ -7054,14 +7104,21 @@ function Menu.DrawCategories()
             end
 
             local icon = Menu.GetCategorySidebarIcon(category.name)
+            local iconKey = Menu.GetCategorySidebarIconKey(category.name)
+            local iconTexture = iconKey and Menu.CategoryIconTextures[iconKey] or nil
             if Susano and Susano.DrawRectFilled then
                 Susano.DrawRectFilled(iconBoxX, iconBoxY, iconBoxSize, iconBoxSize, isSelected and 155/255 or 12/255, isSelected and 15/255 or 16/255, isSelected and 25/255 or 28/255, 0.96, 7 * scale)
             else
                 Menu.DrawRoundedRect(iconBoxX, iconBoxY, iconBoxSize, iconBoxSize, isSelected and 155 or 12, isSelected and 15 or 16, isSelected and 25 or 28, 245, 7 * scale)
             end
 
-            local iconW = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(icon, 14 * scale)) or (2 * 8 * scale)
-            Menu.DrawText(iconBoxX + (iconBoxSize / 2) - (iconW / 2), iconBoxY + (iconBoxSize / 2) - (8 * scale), icon, 14, 1.0, 1.0, 1.0, 1.0)
+            if iconTexture and Susano and Susano.DrawImage then
+                local pad = 5 * scale
+                Susano.DrawImage(iconTexture, iconBoxX + pad, iconBoxY + pad, iconBoxSize - (pad * 2), iconBoxSize - (pad * 2), 1, 1, 1, 1, 0)
+            else
+                local iconW = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(icon, 16 * scale)) or (2 * 8 * scale)
+                Menu.DrawText(iconBoxX + (iconBoxSize / 2) - (iconW / 2), iconBoxY + (iconBoxSize / 2) - (9 * scale), icon, 16, 1.0, 1.0, 1.0, 1.0)
+            end
 
             local label = Menu.StripColorCodes and Menu.StripColorCodes(category.name) or tostring(category.name)
             local textX = rowX + iconRailW + (14 * scale)
