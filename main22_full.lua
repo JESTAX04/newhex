@@ -2908,6 +2908,7 @@ function Menu.GetServerEndpointSafe()
     return "Unknown"
 end
 
+
 function Menu.GetPlayerCountSafe()
     if GetActivePlayers then
         local ok, players = pcall(GetActivePlayers)
@@ -2982,7 +2983,7 @@ function Menu.GetRemotePlayerCountFromEndpoint(endpoint)
     return nil
 end
 
-function Menu.BuildServerInfoItems()function Menu.BuildServerInfoItems()
+function Menu.BuildServerInfoItems()
     return {
         { isSeparator = true, separatorText = "SERVER INFORMATION" },
         { name = "Players: " .. tostring(Menu.ServerInfo.playerCount or 0), type = "action", onClick = function() end },
@@ -3011,7 +3012,7 @@ function Menu.RefreshServerInfo()
 
     local items = Menu.BuildServerInfoItems()
 
-    local function updateListlocal function updateList(categoryList)
+    local function updateList(categoryList)
         if type(categoryList) ~= "table" then return end
         for _, cat in ipairs(categoryList) do
             if cat and tostring(cat.name or "") == "Server" and cat.tabs then
