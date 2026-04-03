@@ -7141,9 +7141,10 @@ function Menu.DrawCategories()
     end
 
     if totalCategories > 0 then
-        local scrollbarStartY = startY + mainMenuHeight + mainMenuSpacing
-        local visibleHeight = actualVisibleCount * itemHeight
-        Menu.DrawScrollbar(x, scrollbarStartY, visibleHeight, Menu.CurrentCategory, totalCategories, true, width)
+        -- right-side scrollbar intentionally disabled for clean category panel
+        -- local scrollbarStartY = startY + mainMenuHeight + mainMenuSpacing
+        -- local visibleHeight = actualVisibleCount * itemHeight
+        -- Menu.DrawScrollbar(x, scrollbarStartY, visibleHeight, Menu.CurrentCategory, totalCategories, true, width)
     end
 end
 
