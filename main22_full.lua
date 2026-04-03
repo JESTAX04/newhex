@@ -6418,26 +6418,24 @@ local function southColor(r, g, b, a)
 end
 
 Menu.NextStyle = {
-    panel = southColor(6, 8, 14, 238),
-    panel2 = southColor(10, 12, 20, 238),
-    row = southColor(8, 10, 18, 234),
-    rowAlt = southColor(10, 13, 22, 234),
-    rowBorder = southColor(28, 34, 52, 255),
-    rowSelected = southColor(215, 24, 34, 250),
-    rowSelected2 = southColor(120, 10, 18, 248),
-    rowSelectedGlow = southColor(255, 72, 90, 255),
-    accent = southColor(225, 28, 40, 255),
-    accentSoft = southColor(132, 14, 22, 255),
-    titleBg = southColor(16, 18, 28, 246),
-    titleBg2 = southColor(7, 9, 16, 246),
-    footerBg = southColor(12, 14, 22, 244),
-    shadow = southColor(0, 0, 0, 185),
-    white = southColor(248, 249, 252, 255),
-    dim = southColor(205, 210, 220, 238),
-    muted = southColor(146, 154, 168, 220),
-    black = southColor(0, 0, 0, 255),
-    premium = southColor(255, 215, 120, 255),
-    premiumGlow = southColor(255, 180, 70, 255)
+    panel = southColor(7, 9, 14, 236),
+    panel2 = southColor(11, 14, 22, 236),
+    row = southColor(8, 11, 18, 232),
+    rowAlt = southColor(10, 14, 22, 232),
+    rowBorder = southColor(22, 28, 40, 255),
+    rowSelected = southColor(203, 21, 28, 248),
+    rowSelected2 = southColor(128, 8, 14, 248),
+    rowSelectedGlow = southColor(255, 85, 92, 255),
+    accent = southColor(215, 27, 35, 255),
+    accentSoft = southColor(120, 18, 24, 255),
+    titleBg = southColor(16, 18, 28, 245),
+    titleBg2 = southColor(7, 9, 16, 245),
+    footerBg = southColor(14, 16, 24, 242),
+    shadow = southColor(0, 0, 0, 180),
+    white = southColor(245, 247, 250, 255),
+    dim = southColor(195, 200, 210, 235),
+    muted = southColor(132, 140, 152, 220),
+    black = southColor(0, 0, 0, 255)
 }
 
 st = Menu.NextStyle
@@ -6538,11 +6536,10 @@ end
 
 function Menu.DrawNextShadow(x, y, w, h, strength)
     local st = Menu.NextStyle
-    strength = strength or 0.24
+    strength = strength or 0.22
     if Susano and Susano.DrawRectFilled then
         Susano.DrawRectFilled(x + 3, y + 4, w, h, 0, 0, 0, strength, 10)
-        Susano.DrawRectFilled(x + 6, y + 8, w, h, 0, 0, 0, strength * 0.62, 12)
-        Susano.DrawRectFilled(x - 1, y - 1, w + 2, h + 2, st.accent.r/255, st.accent.g/255, st.accent.b/255, 0.025, 10)
+        Susano.DrawRectFilled(x + 6, y + 8, w, h, 0, 0, 0, strength * 0.55, 12)
     end
 end
 
@@ -6701,7 +6698,7 @@ function Menu.DrawItem(x, itemY, width, itemHeight, item, isSelected)
     local bg = isSelected and st.rowSelected or (((math.floor(itemY / itemHeight) % 2) == 0) and st.row or st.rowAlt)
 
     if isSelected then
-        Menu.DrawNextShadow(rowX, itemY + 2, rowW, rowH, 0.26)
+        Menu.DrawNextShadow(rowX, itemY + 2, rowW, rowH, 0.22)
         if Menu.SelectorGlowY == 0 then Menu.SelectorGlowY = itemY + 2 end
         if Menu.UIEffects and Menu.UIEffects.hoverGlow then
             local smooth = 0.18
@@ -6711,7 +6708,7 @@ function Menu.DrawItem(x, itemY, width, itemHeight, item, isSelected)
             Menu.SelectorGlowY = itemY + 2
         end
         if Susano and Susano.DrawRectFilled then
-            Susano.DrawRectFilled(rowX - 1, Menu.SelectorGlowY - 1, rowW + 2, rowH + 2, st.rowSelectedGlow.r/255, st.rowSelectedGlow.g/255, st.rowSelectedGlow.b/255, 0.13, 10)
+            Susano.DrawRectFilled(rowX - 1, Menu.SelectorGlowY - 1, rowW + 2, rowH + 2, st.rowSelectedGlow.r/255, st.rowSelectedGlow.g/255, st.rowSelectedGlow.b/255, 0.10, 10)
             Susano.DrawRectFilled(rowX, Menu.SelectorGlowY, rowW, rowH, 1.0, 1.0, 1.0, 0.010, 9)
         end
     end
@@ -6843,7 +6840,7 @@ function Menu.DrawCategories()
             local bg = selected and st.rowSelected or (((displayIndex % 2) == 0) and st.row or st.rowAlt)
 
             if selected then
-                Menu.DrawNextShadow(rowX, yy + 2, rowW, rowH, 0.26)
+                Menu.DrawNextShadow(rowX, yy + 2, rowW, rowH, 0.22)
                 if Menu.SelectorGlowY == 0 then Menu.SelectorGlowY = yy + 2 end
                 if Menu.UIEffects and Menu.UIEffects.hoverGlow then
                     local smooth = 0.18
@@ -6853,7 +6850,7 @@ function Menu.DrawCategories()
                     Menu.SelectorGlowY = yy + 2
                 end
                 if Susano and Susano.DrawRectFilled then
-                    Susano.DrawRectFilled(rowX - 1, Menu.SelectorGlowY - 1, rowW + 2, rowH + 2, st.rowSelectedGlow.r/255, st.rowSelectedGlow.g/255, st.rowSelectedGlow.b/255, 0.13, 10)
+                    Susano.DrawRectFilled(rowX - 1, Menu.SelectorGlowY - 1, rowW + 2, rowH + 2, st.rowSelectedGlow.r/255, st.rowSelectedGlow.g/255, st.rowSelectedGlow.b/255, 0.10, 10)
                     Susano.DrawRectFilled(rowX, Menu.SelectorGlowY, rowW, rowH, 1.0, 1.0, 1.0, 0.010, 9)
                 end
             end
@@ -6893,18 +6890,15 @@ function Menu.DrawFooter()
         totalRows = math.min(Menu.ItemsPerPage, math.max(0, #Menu.Categories - 1))
     end
     local footerY = p.y + (Menu.Banner.height * scale) + p.mainMenuHeight + (totalRows * p.itemHeight) + p.footerSpacing
-    local footerText = tostring(Menu.DiscordInvite or "https://discord.gg/premium")
-    local rightText = "PREMIUM"
+    local footerText = tostring(Menu.DiscordInvite or "discord.gg/phase")
+    local rightText = "Premium"
     Menu.DrawNextRoundRect(p.x + 8, footerY, p.width - 16, p.footerHeight, st.footerBg, 8)
     Menu.DrawSouthIcon(p.x + 18, footerY + 4, 22, "S", false)
     Menu.DrawText(p.x + 48, footerY + 7, footerText, 13, st.dim.r/255, st.dim.g/255, st.dim.b/255, 1.0)
     local posText = string.format("%d/%d", math.max(1, Menu.CurrentCategory - 1), math.max(1, math.max(0, #Menu.Categories - 1)))
     local tw1 = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(rightText, 13)) or (#rightText * 7)
     local tw2 = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(posText, 13)) or (#posText * 7)
-    if Susano and Susano.DrawRectFilled then
-        Susano.DrawRectFilled(p.x + p.width - tw1 - tw2 - 42, footerY + 5, tw1 + 18, p.footerHeight - 10, st.premiumGlow.r/255, st.premiumGlow.g/255, st.premiumGlow.b/255, 0.08, 7)
-    end
-    Menu.DrawText(p.x + p.width - tw1 - tw2 - 28, footerY + 7, rightText, 13, st.premium.r/255, st.premium.g/255, st.premium.b/255, 1.0)
+    Menu.DrawText(p.x + p.width - tw1 - tw2 - 28, footerY + 7, rightText, 13, st.white.r/255, st.white.g/255, st.white.b/255, 1.0)
     Menu.DrawText(p.x + p.width - tw2 - 16, footerY + 7, posText, 13, st.dim.r/255, st.dim.g/255, st.dim.b/255, 1.0)
 end
 
