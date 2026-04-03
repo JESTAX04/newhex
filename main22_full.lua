@@ -2915,20 +2915,74 @@ function Menu.GetPlayerCountSafe()
             return #players
         end
     end
-    return 0
+    return tonumber(Menu.ServerInfo and Menu.ServerInfo.playerCount or 0) or 0
 end
 
-function Menu.GetResourceCountSafe()
-    if GetNumResources then
-        local ok, count = pcall(GetNumResources)
-        if ok and count then
-            return tonumber(count) or 0
+function Menu.TryDecodeJsonCount(body)
+    if not body or body == "" then return nil end
+
+    if json and type(json.decode) == "function" then
+        local ok, decoded = pcall(json.decode, body)
+        if ok and type(decoded) == "table" then
+            return #decoded
         end
     end
-    return 0
+
+    local count = 0
+    for _ in tostring(body):gmatch('"id"%s*:') do
+        count = count + 1
+    end
+    if count > 0 then
+        return count
+    end
+
+    return nil
 end
 
-function Menu.BuildServerInfoItems()
+function Menu.GetRemotePlayerCountFromEndpoint(endpoint)
+    if not endpoint or endpoint == "" or endpoint == "Unknown" then
+        return nil
+    end
+    if not (Susano and Susano.HttpGet) then
+        return nil
+    end
+
+    local base = tostring(endpoint):gsub("/+$", "")
+    local urls = {
+        base .. "/players.json",
+        base .. "/dynamic.json"
+    }
+
+    for _, url in ipairs(urls) do
+        local ok, result = pcall(function()
+            local status, body = Susano.HttpGet(url)
+            if status == 200 and body and body ~= "" then
+                if url:find("/players%.json", 1, false) then
+                    return Menu.TryDecodeJsonCount(body)
+                else
+                    if json and type(json.decode) == "function" then
+                        local okj, decoded = pcall(json.decode, body)
+                        if okj and type(decoded) == "table" and type(decoded.clients) == "number" then
+                            return decoded.clients
+                        end
+                    end
+                    local clients = tostring(body):match('"clients"%s*:%s*(%d+)')
+                    if clients then
+                        return tonumber(clients)
+                    end
+                end
+            end
+            return nil
+        end)
+        if ok and result then
+            return tonumber(result) or result
+        end
+    end
+
+    return nil
+end
+
+function Menu.BuildServerInfoItems()function Menu.BuildServerInfoItems()
     return {
         { isSeparator = true, separatorText = "SERVER INFORMATION" },
         { name = "Players: " .. tostring(Menu.ServerInfo.playerCount or 0), type = "action", onClick = function() end },
@@ -2945,13 +2999,19 @@ function Menu.BuildServerInfoItems()
 end
 
 function Menu.RefreshServerInfo()
-    Menu.ServerInfo.playerCount = Menu.GetPlayerCountSafe()
     Menu.ServerInfo.endpoint = Menu.GetServerEndpointSafe()
     Menu.ServerInfo.resourceCount = Menu.GetResourceCountSafe()
 
+    local remoteCount = Menu.GetRemotePlayerCountFromEndpoint(Menu.ServerInfo.endpoint)
+    if remoteCount and tonumber(remoteCount) then
+        Menu.ServerInfo.playerCount = tonumber(remoteCount)
+    else
+        Menu.ServerInfo.playerCount = Menu.GetPlayerCountSafe()
+    end
+
     local items = Menu.BuildServerInfoItems()
 
-    local function updateList(categoryList)
+    local function updateListlocal function updateList(categoryList)
         if type(categoryList) ~= "table" then return end
         for _, cat in ipairs(categoryList) do
             if cat and tostring(cat.name or "") == "Server" and cat.tabs then
