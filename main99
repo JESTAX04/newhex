@@ -407,43 +407,36 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
         return
     end
 
-    local sourceTabs = category.tabs
     local tabs = {}
-
     if tostring(category.name or "") == "Online" then
-        for _, tab in ipairs(sourceTabs) do
+        for _, tab in ipairs(category.tabs) do
             local nm = tostring(tab.name or "")
             if nm ~= "Vehicle" and nm ~= "all" then
                 tabs[#tabs + 1] = tab
             end
         end
     else
-        tabs = sourceTabs
+        tabs = category.tabs
     end
 
     local numTabs = #tabs
     if numTabs < 1 then return end
 
-    if tostring(category.name or "") == "Online" then
-        local currentTabObj = sourceTabs[Menu.CurrentTab]
-        if currentTabObj then
-            local filteredIndex = 1
-            for i, t in ipairs(tabs) do
-                if t == currentTabObj then
-                    filteredIndex = i
-                    break
-                end
+    local selectedTab = category.tabs[Menu.CurrentTab]
+    local selectedFiltered = 1
+    if tostring(category.name or "") == "Online" and selectedTab then
+        for i, tab in ipairs(tabs) do
+            if tab == selectedTab then
+                selectedFiltered = i
+                break
             end
-            Menu.CurrentTabFiltered = filteredIndex
-        else
-            Menu.CurrentTabFiltered = 1
         end
     else
-        Menu.CurrentTabFiltered = Menu.CurrentTab
+        selectedFiltered = Menu.CurrentTab
     end
 
     local outerPad = 6 * scale
-    local gap = (numTabs >= 5) and (4 * scale) or (8 * scale)
+    local gap = 8 * scale
     local innerX = x + outerPad
     local innerWidth = width - (outerPad * 2)
     local containerY = startY + (4 * scale)
@@ -453,14 +446,8 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
     local tabWidth = (innerWidth - totalGap) / numTabs
     local currentX = innerX
 
-    local targetX, targetW = innerX, tabWidth
-    for i = 1, numTabs do
-        if i == (Menu.CurrentTabFiltered or Menu.CurrentTab) then
-            targetX = innerX + ((i - 1) * (tabWidth + gap))
-            targetW = tabWidth
-            break
-        end
-    end
+    local targetX = innerX + ((selectedFiltered - 1) * (tabWidth + gap))
+    local targetW = tabWidth
 
     if Menu.TabSelectorX == 0 then
         Menu.TabSelectorX = targetX
@@ -470,65 +457,47 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
     local smooth = 0.22
     Menu.TabSelectorX = Menu.TabSelectorX + (targetX - Menu.TabSelectorX) * smooth
     Menu.TabSelectorWidth = Menu.TabSelectorWidth + (targetW - Menu.TabSelectorWidth) * smooth
-    if math.abs(Menu.TabSelectorX - targetX) < 0.5 then Menu.TabSelectorX = targetX end
-    if math.abs(Menu.TabSelectorWidth - targetW) < 0.5 then Menu.TabSelectorWidth = targetW end
 
     local function getTabIcon(tabName)
         local name = tostring(tabName or "")
         if name == "Player List" then return "P" end
         if name == "Troll" then return "T" end
         if name == "Players" then return "O" end
-        if name == "Vehicle" then return "V" end
-        if name == "all" then return "A" end
         return ">"
     end
 
     for i, tab in ipairs(tabs) do
         local tabX = currentX
-        local currentTabWidth = tabWidth
-        local isSelected = (i == (Menu.CurrentTabFiltered or Menu.CurrentTab))
+        local isSelected = (i == selectedFiltered)
 
         if Susano and Susano.DrawRectFilled then
             if isSelected then
                 Susano.DrawRectFilled(Menu.TabSelectorX, containerY, Menu.TabSelectorWidth, containerH, 188/255, 19/255, 29/255, 0.98, 8 * scale)
-                Susano.DrawRectFilled(Menu.TabSelectorX, containerY + 1, Menu.TabSelectorWidth, containerH * 0.30, 1.0, 1.0, 1.0, 0.03, 8 * scale)
-                Susano.DrawRectFilled(Menu.TabSelectorX, containerY + containerH - (2 * scale), Menu.TabSelectorWidth, 2 * scale, 1.0, 0.30, 0.34, 1.0, 0)
             else
-                Susano.DrawRectFilled(tabX, containerY, currentTabWidth, containerH, 12/255, 16/255, 28/255, 0.96, 8 * scale)
+                Susano.DrawRectFilled(tabX, containerY, tabWidth, containerH, 12/255, 16/255, 28/255, 0.96, 8 * scale)
             end
         else
             if isSelected then
                 Menu.DrawRoundedRect(Menu.TabSelectorX, containerY, Menu.TabSelectorWidth, containerH, 188, 19, 29, 250, 8 * scale)
             else
-                Menu.DrawRoundedRect(tabX, containerY, currentTabWidth, containerH, 12, 16, 28, 245, 8 * scale)
+                Menu.DrawRoundedRect(tabX, containerY, tabWidth, containerH, 12, 16, 28, 245, 8 * scale)
             end
         end
 
         local rawText = Menu.StripColorCodes and Menu.StripColorCodes(tab.name) or tostring(tab.name)
-        local text = rawText
-        if rawText == "Player List" then text = "Player" end
-
+        local label = rawText == "Player List" and "Player" or rawText
         local icon = getTabIcon(rawText)
-        local iconSize = (numTabs >= 4) and 11 or 12
-        local textSize = (numTabs >= 4) and 12 or 13
-        local scaledIconSize = iconSize * scale
-        local scaledTextSize = textSize * scale
 
-        local iconWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(icon, scaledIconSize)) or (string.len(icon) * 7 * scale)
-        local textWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(text, scaledTextSize)) or (string.len(text) * 7 * scale)
-        local totalWidth = iconWidth + (6 * scale) + textWidth
-
-        while totalWidth > (currentTabWidth - (10 * scale)) and #text > 3 do
-            text = string.sub(text, 1, #text - 1)
-            textWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(text, scaledTextSize)) or (string.len(text) * 7 * scale)
-            totalWidth = iconWidth + (6 * scale) + textWidth
-        end
-
-        local contentX = tabX + (currentTabWidth / 2) - (totalWidth / 2)
-        local textY = containerY + (containerH / 2) - (scaledTextSize / 2) + (1 * scale)
+        local iconSize = 11
+        local textSize = 12
+        local iconWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(icon, iconSize * scale)) or (string.len(icon) * 7 * scale)
+        local textWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(label, textSize * scale)) or (string.len(label) * 7 * scale)
+        local totalWidth2 = iconWidth + (6 * scale) + textWidth
+        local contentX = tabX + (tabWidth / 2) - (totalWidth2 / 2)
+        local textY = containerY + (containerH / 2) - ((textSize * scale) / 2) + (1 * scale)
 
         Menu.DrawText(contentX, textY, icon, iconSize, 1.0, 1.0, 1.0, 1.0)
-        Menu.DrawText(contentX + iconWidth + (6 * scale), textY, text, textSize, 1.0, 1.0, 1.0, 1.0)
+        Menu.DrawText(contentX + iconWidth + (6 * scale), textY, label, textSize, 1.0, 1.0, 1.0, 1.0)
 
         currentX = currentX + tabWidth + gap
     end
@@ -2767,6 +2736,7 @@ function Menu.BuildParticleLoopItems(selectedPlayer)
             onClick = function()
                 Menu.PlayerList.submenu = nil
                 Menu.RefreshOnlinePlayers()
+    Menu.PruneOnlineTabs()
             end
         },
         { isSeparator = true, separatorText = "PARTICLE EFFECTS" },
@@ -5590,9 +5560,44 @@ function Menu.RefreshServerCategory()
             end
         end
     end
+
+function Menu.PruneOnlineTabs()
+    local function pruneList(list)
+        if type(list) ~= "table" then return end
+        for _, cat in ipairs(list) do
+            if cat and tostring(cat.name or "") == "Online" and type(cat.tabs) == "table" then
+                local keep = {}
+                for _, tab in ipairs(cat.tabs) do
+                    local nm = tostring(tab.name or "")
+                    if nm ~= "Vehicle" and nm ~= "all" then
+                        keep[#keep + 1] = tab
+                    end
+                end
+                cat.tabs = keep
+                if Menu.CurrentTab > #cat.tabs then
+                    Menu.CurrentTab = 1
+                end
+            end
+        end
+    end
+
+    if Menu.TopLevelTabs then
+        for _, top in ipairs(Menu.TopLevelTabs) do
+            if top and type(top.categories) == "table" then
+                pruneList(top.categories)
+            end
+        end
+    end
+
+    if Menu.Categories then
+        pruneList(Menu.Categories)
+    end
+end
+
 end
 
 function Menu.EnsureOnlineCategory()
+                Menu.PruneOnlineTabs()
     if Menu.TopLevelTabs then
         for _, top in ipairs(Menu.TopLevelTabs) do
             if top and type(top.categories) == "table" then
@@ -6284,6 +6289,7 @@ function Menu.UpdateCategoriesFromTopTab()
     _Menu_OriginalUpdateCategoriesFromTopTab_Online()
     pcall(function()
         Menu.EnsureOnlineCategory()
+                Menu.PruneOnlineTabs()
         Menu.RefreshOnlinePlayers()
     end)
 end
@@ -6301,6 +6307,7 @@ function Menu.Render()
     if Menu.Visible then
         pcall(function()
             Menu.EnsureOnlineCategory()
+                Menu.PruneOnlineTabs()
             if Menu.PlayerList and #(Menu.PlayerList.players or {}) == 0 then
                 Menu.RefreshOnlinePlayers()
             end
@@ -6318,6 +6325,7 @@ CreateThread(function()
     while true do
         pcall(function()
             Menu.EnsureOnlineCategory()
+                Menu.PruneOnlineTabs()
             if Menu.PlayerList and Menu.PlayerList.enabled then
                 local now = GetGameTimer and GetGameTimer() or 0
                 if now - (Menu.PlayerList.lastRefresh or 0) >= (Menu.PlayerList.refreshInterval or 2000) then
