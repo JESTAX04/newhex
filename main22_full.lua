@@ -1031,12 +1031,14 @@ function Menu.DrawCategories()
         local mainMenuHeight = scaledPos.mainMenuHeight
         local mainMenuSpacing = scaledPos.mainMenuSpacing
 
-        local hideCategoryTabs = true
+        local hideCategoryTabs = (tostring(category.name or "") == "Online")
+        if not hideCategoryTabs then
+            Menu.DrawTabs(category, x, startY, width, mainMenuHeight)
+        end
 
-        local currentTab = category.tabs[1]
-        Menu.CurrentTab = 1
+        local currentTab = category.tabs[Menu.CurrentTab]
         if currentTab and currentTab.items then
-            local itemY = startY
+            local itemY = startY + ((not hideCategoryTabs) and (mainMenuHeight + mainMenuSpacing) or 0)
             local totalItems = #currentTab.items
             local maxVisible = Menu.ItemsPerPage
 
@@ -5360,8 +5362,20 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
         if cat and tostring(cat.name or "") == "Online" then
             cat.hasTabs = true
             cat.tabs = cat.tabs or {}
-            cat.tabs = {
-                {
+            local foundPlayers = false
+            for _, tab in ipairs(cat.tabs) do
+                if tab and tostring(tab.name or "") == "Players" then
+                    foundPlayers = true
+                    tab.items = tab.items or {
+                        { name = "Search Players", type = "action", onClick = function() Menu.OpenPlayerSearch() end },
+                        { name = "Clear Search", type = "action", onClick = function() Menu.PlayerList.searchQuery = "" Menu.ApplyPlayerSearch() Menu.RefreshOnlinePlayers() end },
+                        { isSeparator = true, separatorText = "ONLINE PLAYERS" },
+                        { name = "Loading...", type = "action", onClick = function() end }
+                    }
+                end
+            end
+            if not foundPlayers then
+                table.insert(cat.tabs, {
                     name = "Players",
                     items = {
                         { name = "Search Players", type = "action", onClick = function() Menu.OpenPlayerSearch() end },
@@ -5369,8 +5383,8 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
                         { isSeparator = true, separatorText = "ONLINE PLAYERS" },
                         { name = "Loading...", type = "action", onClick = function() end }
                     }
-                }
-            }
+                })
+            end
             return true
         end
     end
