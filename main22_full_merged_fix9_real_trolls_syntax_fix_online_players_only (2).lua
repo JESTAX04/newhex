@@ -407,8 +407,40 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
         return
     end
 
-    local numTabs = #category.tabs
+    local sourceTabs = category.tabs
+    local tabs = {}
+
+    if tostring(category.name or "") == "Online" then
+        for _, tab in ipairs(sourceTabs) do
+            local nm = tostring(tab.name or "")
+            if nm ~= "Vehicle" and nm ~= "all" then
+                tabs[#tabs + 1] = tab
+            end
+        end
+    else
+        tabs = sourceTabs
+    end
+
+    local numTabs = #tabs
     if numTabs < 1 then return end
+
+    if tostring(category.name or "") == "Online" then
+        local currentTabObj = sourceTabs[Menu.CurrentTab]
+        if currentTabObj then
+            local filteredIndex = 1
+            for i, t in ipairs(tabs) do
+                if t == currentTabObj then
+                    filteredIndex = i
+                    break
+                end
+            end
+            Menu.CurrentTabFiltered = filteredIndex
+        else
+            Menu.CurrentTabFiltered = 1
+        end
+    else
+        Menu.CurrentTabFiltered = Menu.CurrentTab
+    end
 
     local outerPad = 6 * scale
     local gap = (numTabs >= 5) and (4 * scale) or (8 * scale)
@@ -423,7 +455,7 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
 
     local targetX, targetW = innerX, tabWidth
     for i = 1, numTabs do
-        if i == Menu.CurrentTab then
+        if i == (Menu.CurrentTabFiltered or Menu.CurrentTab) then
             targetX = innerX + ((i - 1) * (tabWidth + gap))
             targetW = tabWidth
             break
@@ -441,10 +473,20 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
     if math.abs(Menu.TabSelectorX - targetX) < 0.5 then Menu.TabSelectorX = targetX end
     if math.abs(Menu.TabSelectorWidth - targetW) < 0.5 then Menu.TabSelectorWidth = targetW end
 
-    for i, tab in ipairs(category.tabs) do
+    local function getTabIcon(tabName)
+        local name = tostring(tabName or "")
+        if name == "Player List" then return "P" end
+        if name == "Troll" then return "T" end
+        if name == "Players" then return "O" end
+        if name == "Vehicle" then return "V" end
+        if name == "all" then return "A" end
+        return ">"
+    end
+
+    for i, tab in ipairs(tabs) do
         local tabX = currentX
         local currentTabWidth = tabWidth
-        local isSelected = (i == Menu.CurrentTab)
+        local isSelected = (i == (Menu.CurrentTabFiltered or Menu.CurrentTab))
 
         if Susano and Susano.DrawRectFilled then
             if isSelected then
@@ -464,29 +506,29 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
 
         local rawText = Menu.StripColorCodes and Menu.StripColorCodes(tab.name) or tostring(tab.name)
         local text = rawText
-        if numTabs >= 5 then
-            if rawText == "Player List" then text = "Player" end
-            if rawText == "Players" then text = "Players" end
-            if rawText == "Vehicle" then text = "Vehicle" end
-        end
+        if rawText == "Player List" then text = "Player" end
 
-        local textSize = (numTabs >= 5) and 12 or 14
+        local icon = getTabIcon(rawText)
+        local iconSize = (numTabs >= 4) and 11 or 12
+        local textSize = (numTabs >= 4) and 12 or 13
+        local scaledIconSize = iconSize * scale
         local scaledTextSize = textSize * scale
-        local textWidth = 0
-        if Susano and Susano.GetTextWidth then
-            textWidth = Susano.GetTextWidth(text, scaledTextSize)
-        else
-            textWidth = string.len(text) * 7 * scale
-        end
 
-        while textWidth > (currentTabWidth - (10 * scale)) and #text > 3 do
+        local iconWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(icon, scaledIconSize)) or (string.len(icon) * 7 * scale)
+        local textWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(text, scaledTextSize)) or (string.len(text) * 7 * scale)
+        local totalWidth = iconWidth + (6 * scale) + textWidth
+
+        while totalWidth > (currentTabWidth - (10 * scale)) and #text > 3 do
             text = string.sub(text, 1, #text - 1)
             textWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(text, scaledTextSize)) or (string.len(text) * 7 * scale)
+            totalWidth = iconWidth + (6 * scale) + textWidth
         end
 
-        local textX = tabX + (currentTabWidth / 2) - (textWidth / 2)
+        local contentX = tabX + (currentTabWidth / 2) - (totalWidth / 2)
         local textY = containerY + (containerH / 2) - (scaledTextSize / 2) + (1 * scale)
-        Menu.DrawText(textX, textY, text, textSize, 1.0, 1.0, 1.0, 1.0)
+
+        Menu.DrawText(contentX, textY, icon, iconSize, 1.0, 1.0, 1.0, 1.0)
+        Menu.DrawText(contentX + iconWidth + (6 * scale), textY, text, textSize, 1.0, 1.0, 1.0, 1.0)
 
         currentX = currentX + tabWidth + gap
     end
@@ -1031,12 +1073,11 @@ function Menu.DrawCategories()
         local mainMenuHeight = scaledPos.mainMenuHeight
         local mainMenuSpacing = scaledPos.mainMenuSpacing
 
-        local hideCategoryTabs = true
+        Menu.DrawTabs(category, x, startY, width, mainMenuHeight)
 
-        local currentTab = category.tabs[1]
-        Menu.CurrentTab = 1
+        local currentTab = category.tabs[Menu.CurrentTab]
         if currentTab and currentTab.items then
-            local itemY = startY
+            local itemY = startY + mainMenuHeight + mainMenuSpacing
             local totalItems = #currentTab.items
             local maxVisible = Menu.ItemsPerPage
 
@@ -5360,8 +5401,20 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
         if cat and tostring(cat.name or "") == "Online" then
             cat.hasTabs = true
             cat.tabs = cat.tabs or {}
-            cat.tabs = {
-                {
+            local foundPlayers = false
+            for _, tab in ipairs(cat.tabs) do
+                if tab and tostring(tab.name or "") == "Players" then
+                    foundPlayers = true
+                    tab.items = tab.items or {
+                        { name = "Search Players", type = "action", onClick = function() Menu.OpenPlayerSearch() end },
+                        { name = "Clear Search", type = "action", onClick = function() Menu.PlayerList.searchQuery = "" Menu.ApplyPlayerSearch() Menu.RefreshOnlinePlayers() end },
+                        { isSeparator = true, separatorText = "ONLINE PLAYERS" },
+                        { name = "Loading...", type = "action", onClick = function() end }
+                    }
+                end
+            end
+            if not foundPlayers then
+                table.insert(cat.tabs, {
                     name = "Players",
                     items = {
                         { name = "Search Players", type = "action", onClick = function() Menu.OpenPlayerSearch() end },
@@ -5369,8 +5422,8 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
                         { isSeparator = true, separatorText = "ONLINE PLAYERS" },
                         { name = "Loading...", type = "action", onClick = function() end }
                     }
-                }
-            }
+                })
+            end
             return true
         end
     end
