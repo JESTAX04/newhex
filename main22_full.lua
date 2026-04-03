@@ -2895,7 +2895,8 @@ Menu.ServerInfo = Menu.ServerInfo or {
     lastRefresh = 0,
     playerCount = 0,
     endpoint = "Unknown",
-    resourceCount = 0
+    resourceCount = 0,
+    playerNames = {}
 }
 
 function Menu.GetServerEndpointSafe()
@@ -2917,6 +2918,28 @@ function Menu.GetPlayerCountSafe()
         end
     end
     return tonumber(Menu.ServerInfo and Menu.ServerInfo.playerCount or 0) or 0
+end
+
+
+function Menu.GetPlayerNamesSafe()
+    local names = {}
+
+    if GetActivePlayers and GetPlayerName and GetPlayerServerId then
+        local ok, players = pcall(GetActivePlayers)
+        if ok and type(players) == "table" then
+            for _, player in ipairs(players) do
+                local sid = GetPlayerServerId(player)
+                local pname = GetPlayerName(player) or ("Player " .. tostring(sid or player))
+                table.insert(names, "[" .. tostring(sid or player) .. "] " .. tostring(pname))
+            end
+        end
+    end
+
+    table.sort(names, function(a, b)
+        return tostring(a) < tostring(b)
+    end)
+
+    return names
 end
 
 function Menu.TryDecodeJsonCount(body)
@@ -2984,7 +3007,7 @@ function Menu.GetRemotePlayerCountFromEndpoint(endpoint)
 end
 
 function Menu.BuildServerInfoItems()
-    return {
+    local items = {
         { isSeparator = true, separatorText = "SERVER INFORMATION" },
         { name = "Players: " .. tostring(Menu.ServerInfo.playerCount or 0), type = "action", onClick = function() end },
         { name = "IP: " .. tostring(Menu.ServerInfo.endpoint or "Unknown"), type = "action", onClick = function() end },
@@ -2997,20 +3020,35 @@ function Menu.BuildServerInfoItems()
             end
         }
     }
+
+    local playerNames = Menu.ServerInfo.playerNames or {}
+    if #playerNames > 0 then
+        table.insert(items, { isSeparator = true, separatorText = "PLAYER NAMES" })
+        for _, entry in ipairs(playerNames) do
+            table.insert(items, {
+                name = entry,
+                type = "action",
+                onClick = function() end
+            })
+        end
+    end
+
+    return items
 end
 
 function Menu.RefreshServerInfo()
     Menu.ServerInfo.endpoint = Menu.GetServerEndpointSafe()
     Menu.ServerInfo.resourceCount = Menu.GetResourceCountSafe()
+    Menu.ServerInfo.playerNames = Menu.GetPlayerNamesSafe()
 
     local remoteCount = Menu.GetRemotePlayerCountFromEndpoint(Menu.ServerInfo.endpoint)
     if remoteCount and tonumber(remoteCount) then
         Menu.ServerInfo.playerCount = tonumber(remoteCount)
     else
-        Menu.ServerInfo.playerCount = Menu.GetPlayerCountSafe()
+        Menu.ServerInfo.playerCount = math.max(Menu.GetPlayerCountSafe(), #(Menu.ServerInfo.playerNames or {}))
     end
 
-    local items = Menu.BuildServerInfoItems()
+    local items = Menu.BuildServerInfoItems()local items = Menu.BuildServerInfoItems()
 
     local function updateList(categoryList)
         if type(categoryList) ~= "table" then return end
