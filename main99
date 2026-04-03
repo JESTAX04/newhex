@@ -6964,3 +6964,118 @@ function Menu.DrawFooter()
 end
 
 return Menu
+
+
+-- ===== CATEGORY ICON SIDEBAR OVERRIDE =====
+Menu.DrawCategoriesBase = Menu.DrawCategories
+
+function Menu.GetCategorySidebarIcon(name)
+    local n = string.lower(tostring(name or ""))
+    if n:find("player") or n:find("self") then return "👤" end
+    if n:find("online") then return "👥" end
+    if n:find("vehicle") then return "🚗" end
+    if n:find("visual") then return "👁" end
+    if n:find("weapon") or n:find("combat") then return "🔫" end
+    if n:find("misc") then return "🛡" end
+    if n:find("exploit") or n:find("troll") then return "💣" end
+    if n:find("setting") then return "⚙" end
+    if n:find("server") then return "🌐" end
+    return "•"
+end
+
+function Menu.DrawCategories()
+    if Menu.OpenedCategory then
+        return Menu.DrawCategoriesBase()
+    end
+
+    local scaledPos = Menu.GetScaledPosition()
+    local scale = Menu.Scale or 1.0
+    local x = scaledPos.x
+    local bannerHeight = Menu.Banner.enabled and (Menu.Banner.height * scale) or scaledPos.headerHeight
+    local startY = scaledPos.y + bannerHeight
+    local width = scaledPos.width
+    local itemHeight = scaledPos.itemHeight
+    local mainMenuHeight = scaledPos.mainMenuHeight
+    local mainMenuSpacing = scaledPos.mainMenuSpacing
+
+    local totalCategories = #Menu.Categories - 1
+    local maxVisible = Menu.ItemsPerPage
+
+    if Menu.CurrentCategory > Menu.CategoryScrollOffset + maxVisible + 1 then
+        Menu.CategoryScrollOffset = Menu.CurrentCategory - maxVisible - 1
+    elseif Menu.CurrentCategory <= Menu.CategoryScrollOffset + 1 then
+        Menu.CategoryScrollOffset = math.max(0, Menu.CurrentCategory - 2)
+    end
+
+    local titleBgY = startY
+    if Susano and Susano.DrawRectFilled then
+        Susano.DrawRectFilled(x, titleBgY, width, mainMenuHeight, 10/255, 14/255, 24/255, 0.96, 0)
+    else
+        Menu.DrawRect(x, titleBgY, width, mainMenuHeight, 10, 14, 24, 245)
+    end
+
+    local headerText = "Main Menu"
+    if Menu.Categories and Menu.Categories[1] and Menu.Categories[1].name then
+        headerText = Menu.StripColorCodes and Menu.StripColorCodes(Menu.Categories[1].name) or tostring(Menu.Categories[1].name)
+    end
+    local tw = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(headerText, 18 * scale)) or (#headerText * 8 * scale)
+    Menu.DrawText(x + (width / 2) - (tw / 2), titleBgY + (mainMenuHeight / 2) - (9 * scale), headerText, 18, 1.0, 1.0, 1.0, 1.0)
+
+    local actualVisibleCount = 0
+    for displayIndex = 1, math.min(maxVisible, totalCategories) do
+        local categoryIndex = displayIndex + Menu.CategoryScrollOffset + 1
+        if categoryIndex <= #Menu.Categories then
+            actualVisibleCount = actualVisibleCount + 1
+            local category = Menu.Categories[categoryIndex]
+            local isSelected = (categoryIndex == Menu.CurrentCategory)
+            local itemY = startY + mainMenuHeight + mainMenuSpacing + (displayIndex - 1) * itemHeight
+
+            local rowX = x + (6 * scale)
+            local rowY = itemY + (2 * scale)
+            local rowW = width - (12 * scale)
+            local rowH = itemHeight - (4 * scale)
+            local iconRailW = 46 * scale
+            local iconBoxSize = 28 * scale
+            local iconBoxX = rowX + (8 * scale)
+            local iconBoxY = rowY + (rowH / 2) - (iconBoxSize / 2)
+
+            if Susano and Susano.DrawRectFilled then
+                if isSelected then
+                    Susano.DrawRectFilled(rowX, rowY, rowW, rowH, 189/255, 19/255, 29/255, 0.98, 8 * scale)
+                    Susano.DrawRectFilled(rowX + 1, rowY + 1, rowW - 2, rowH * 0.35, 1.0, 1.0, 1.0, 0.025, 8 * scale)
+                else
+                    Susano.DrawRectFilled(rowX, rowY, rowW, rowH, 10/255, 14/255, 24/255, 0.96, 8 * scale)
+                end
+                Susano.DrawRectFilled(rowX + iconRailW, rowY + 5, 1, rowH - 10, 1.0, 1.0, 1.0, isSelected and 0.16 or 0.08, 0)
+            else
+                if isSelected then
+                    Menu.DrawRoundedRect(rowX, rowY, rowW, rowH, 189, 19, 29, 250, 8 * scale)
+                else
+                    Menu.DrawRoundedRect(rowX, rowY, rowW, rowH, 10, 14, 24, 245, 8 * scale)
+                end
+            end
+
+            local icon = Menu.GetCategorySidebarIcon(category.name)
+            if Susano and Susano.DrawRectFilled then
+                Susano.DrawRectFilled(iconBoxX, iconBoxY, iconBoxSize, iconBoxSize, isSelected and 155/255 or 12/255, isSelected and 15/255 or 16/255, isSelected and 25/255 or 28/255, 0.96, 7 * scale)
+            else
+                Menu.DrawRoundedRect(iconBoxX, iconBoxY, iconBoxSize, iconBoxSize, isSelected and 155 or 12, isSelected and 15 or 16, isSelected and 25 or 28, 245, 7 * scale)
+            end
+
+            local iconW = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(icon, 14 * scale)) or (2 * 8 * scale)
+            Menu.DrawText(iconBoxX + (iconBoxSize / 2) - (iconW / 2), iconBoxY + (iconBoxSize / 2) - (8 * scale), icon, 14, 1.0, 1.0, 1.0, 1.0)
+
+            local label = Menu.StripColorCodes and Menu.StripColorCodes(category.name) or tostring(category.name)
+            local textX = rowX + iconRailW + (14 * scale)
+            local textY = rowY + (rowH / 2) - (9 * scale)
+            Menu.DrawText(textX, textY, label, 16, 1.0, 1.0, 1.0, 1.0)
+            Menu.DrawText(rowX + rowW - (24 * scale), textY, ">>", 16, 1.0, 1.0, 1.0, isSelected and 1.0 or 0.85)
+        end
+    end
+
+    if totalCategories > 0 then
+        local scrollbarStartY = startY + mainMenuHeight + mainMenuSpacing
+        local visibleHeight = actualVisibleCount * itemHeight
+        Menu.DrawScrollbar(x, scrollbarStartY, visibleHeight, Menu.CurrentCategory, totalCategories, true, width)
+    end
+end
