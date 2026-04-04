@@ -289,7 +289,7 @@ function Menu.DrawHeader()
 
     if Susano and Susano.DrawRectFilled then
         Susano.DrawRectFilled(x, y, width, bannerHeight, (st.panel.r or 0)/255, (st.panel.g or 0)/255, (st.panel.b or 0)/255, 0.98, 0)
-        Susano.DrawRectFilled(x, y, width, bannerHeight * 0.55, 18/255, 30/255, 60/255, 0.28, 0)
+        Susano.DrawRectFilled(x, y, width, bannerHeight * 0.55, 70/255, 10/255, 14/255, 0.30, 0)
     else
         Menu.DrawRect(x, y, width, bannerHeight, 2, 7, 15, 250)
     end
@@ -300,7 +300,7 @@ function Menu.DrawHeader()
         if Susano and Susano.DrawRectFilled then
             Susano.DrawRectFilled(x + (18 * scale), y + (16 * scale), 52 * scale, 52 * scale, 14/255, 60/255, 155/255, 0.15, 10 * scale)
         end
-        Menu.DrawText(x + (24 * scale), y + (18 * scale), "A", 30, 0.20, 0.66, 1.0, 1.0)
+        Menu.DrawText(x + (24 * scale), y + (18 * scale), "A", 30, 0.95, 0.20, 0.24, 1.0)
         Menu.DrawText(x + (82 * scale), y + (20 * scale), "Phaze", 34, 1.0, 1.0, 1.0, 1.0)
     end
 end
@@ -6452,15 +6452,15 @@ Menu.UIVariant = "next"
 
 
 Menu.PhazeStyle = {
-    blue = { r = 33, g = 135, b = 255, a = 255 },
-    blueSoft = { r = 20, g = 92, b = 201, a = 255 },
-    panel = { r = 2, g = 7, b = 15, a = 242 },
-    panel2 = { r = 5, g = 10, b = 20, a = 242 },
-    row = { r = 4, g = 8, b = 16, a = 235 },
-    rowSelected = { r = 28, g = 120, b = 245, a = 245 },
-    border = { r = 16, g = 28, b = 48, a = 255 },
+    blue = { r = 210, g = 24, b = 34, a = 255 },
+    blueSoft = { r = 145, g = 14, b = 24, a = 255 },
+    panel = { r = 4, g = 4, b = 6, a = 242 },
+    panel2 = { r = 8, g = 8, b = 12, a = 242 },
+    row = { r = 7, g = 7, b = 10, a = 235 },
+    rowSelected = { r = 198, g = 20, b = 30, a = 245 },
+    border = { r = 42, g = 10, b = 16, a = 255 },
     white = { r = 245, g = 247, b = 250, a = 255 },
-    muted = { r = 180, g = 190, b = 210, a = 255 },
+    muted = { r = 190, g = 190, b = 198, a = 255 },
     footer = { r = 0, g = 0, b = 0, a = 235 }
 }
 
@@ -6980,7 +6980,6 @@ function Menu.DrawCategories()
     end
 
     Menu.DrawPhazeBox(x, startY, width, mainMenuHeight, {r=0,g=0,b=0,a=235}, 0)
-    Menu.DrawText(x + (10 * scale), startY + (mainMenuHeight / 2) - (9 * scale), title, 17, 1.0, 1.0, 1.0, 1.0)
     local listStartY = startY + mainMenuHeight + mainMenuSpacing
 
     local actualVisibleCount = 0
