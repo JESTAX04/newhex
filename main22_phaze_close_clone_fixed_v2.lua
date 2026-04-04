@@ -6926,7 +6926,7 @@ function Menu.DrawFooter()
   end
   local footerY = p.y + (Menu.Banner.height * scale) + p.mainMenuHeight + (totalRows * p.itemHeight) + p.footerSpacing
   local footerText = tostring(Menu.DiscordInvite or "discord.gg/phase")
-  local rightText = "Premium"
+  local rightText = ""
   Menu.DrawNextRoundRect(p.x + 8, footerY, p.width - 16, p.footerHeight, st.footerBg, 8)
   Menu.DrawSouthIcon(p.x + 18, footerY + 4, 22, "S", false)
   Menu.DrawText(p.x + 48, footerY + 7, footerText, 13, st.dim.r/255, st.dim.g/255, st.dim.b/255, 1.0)
