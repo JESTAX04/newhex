@@ -2350,6 +2350,46 @@ end
 
 function Menu.CloneNPCAttackPlayer(playerData)
   if not playerData then return end
+  if not GetPlayerFromServerId or not GetPlayerPed then return end
+
+  local target = GetPlayerFromServerId(playerData.id)
+  if target == -1 then return end
+  local targetPed = GetPlayerPed(target)
+  if not targetPed or targetPed == 0 then return end
+  if not ClonePed or not TaskCombatPed then return end
+
+  local coords = GetEntityCoords(targetPed)
+  local x = coords.x or coords[1] or 0.0
+  local y = coords.y or coords[2] or 0.0
+  local z = coords.z or coords[3] or 0.0
+
+  for i = 1, 3 do
+    local npc = ClonePed(targetPed, true, true, true)
+    if npc and npc ~= 0 then
+      if SetEntityCoords then
+        SetEntityCoords(npc, x + math.random(-3, 3), y + math.random(-3, 3), z, false, false, false, false)
+      end
+      if SetEntityInvincible then SetEntityInvincible(npc, true) end
+      if SetPedCanRagdoll then SetPedCanRagdoll(npc, false) end
+      if SetPedCanBeTargetted then SetPedCanBeTargetted(npc, false) end
+      local weapon = GetHashKey("WEAPON_MUSKET")
+      GiveWeaponToPed(npc, weapon, 9999, false, true)
+      SetCurrentPedWeapon(npc, weapon, true)
+      if SetPedAsEnemy then SetPedAsEnemy(npc, true) end
+      if SetPedAccuracy then SetPedAccuracy(npc, 100) end
+      if SetPedCombatAttributes then
+        SetPedCombatAttributes(npc, 46, true)
+        SetPedCombatAttributes(npc, 5, true)
+      end
+      if SetPedCombatAbility then SetPedCombatAbility(npc, 2) end
+      if SetPedCombatRange then SetPedCombatRange(npc, 2) end
+      if SetPedCombatMovement then SetPedCombatMovement(npc, 2) end
+      if SetPedArmour then SetPedArmour(npc, 999) end
+      if SetEntityHealth then SetEntityHealth(npc, 1000) end
+      TaskCombatPed(npc, targetPed, 0, 16)
+    end
+  end
+end
 
 function Menu.CloneNPCAttackPlayerFun(playerData)
   if not playerData then return end
@@ -2372,14 +2412,66 @@ function Menu.CloneNPCAttackPlayerFun(playerData)
       if SetEntityCoords then
         SetEntityCoords(npc, x + math.random(-3, 3), y + math.random(-3, 3), z, false, false, false, false)
       end
+      if SetEntityInvincible then SetEntityInvincible(npc, true) end
+      if SetPedCanRagdoll then SetPedCanRagdoll(npc, false) end
+      if SetPedCanBeTargetted then SetPedCanBeTargetted(npc, false) end
+      local weapon = GetHashKey("WEAPON_RAYPISTOL")
+      GiveWeaponToPed(npc, weapon, 9999, false, true)
+      SetCurrentPedWeapon(npc, weapon, true)
       if SetPedAsEnemy then SetPedAsEnemy(npc, true) end
-      if SetPedAccuracy then SetPedAccuracy(npc, 75) end
+      if SetPedAccuracy then SetPedAccuracy(npc, 100) end
       if SetPedCombatAttributes then
         SetPedCombatAttributes(npc, 46, true)
         SetPedCombatAttributes(npc, 5, true)
       end
+      if SetPedCombatAbility then SetPedCombatAbility(npc, 2) end
       if SetPedCombatRange then SetPedCombatRange(npc, 2) end
       if SetPedCombatMovement then SetPedCombatMovement(npc, 2) end
+      if SetPedArmour then SetPedArmour(npc, 999) end
+      if SetEntityHealth then SetEntityHealth(npc, 1000) end
+      TaskCombatPed(npc, targetPed, 0, 16)
+    end
+  end
+end
+
+function Menu.CloneNPCAttackPlayerRPG(playerData)
+  if not playerData then return end
+  if not GetPlayerFromServerId or not GetPlayerPed then return end
+
+  local target = GetPlayerFromServerId(playerData.id)
+  if target == -1 then return end
+  local targetPed = GetPlayerPed(target)
+  if not targetPed or targetPed == 0 then return end
+  if not ClonePed or not TaskCombatPed then return end
+
+  local coords = GetEntityCoords(targetPed)
+  local x = coords.x or coords[1] or 0.0
+  local y = coords.y or coords[2] or 0.0
+  local z = coords.z or coords[3] or 0.0
+
+  for i = 1, 3 do
+    local npc = ClonePed(targetPed, true, true, true)
+    if npc and npc ~= 0 then
+      if SetEntityCoords then
+        SetEntityCoords(npc, x + math.random(-3, 3), y + math.random(-3, 3), z, false, false, false, false)
+      end
+      if SetEntityInvincible then SetEntityInvincible(npc, true) end
+      if SetPedCanRagdoll then SetPedCanRagdoll(npc, false) end
+      if SetPedCanBeTargetted then SetPedCanBeTargetted(npc, false) end
+      local weapon = GetHashKey("WEAPON_RPG")
+      GiveWeaponToPed(npc, weapon, 9999, false, true)
+      SetCurrentPedWeapon(npc, weapon, true)
+      if SetPedAsEnemy then SetPedAsEnemy(npc, true) end
+      if SetPedAccuracy then SetPedAccuracy(npc, 100) end
+      if SetPedCombatAttributes then
+        SetPedCombatAttributes(npc, 46, true)
+        SetPedCombatAttributes(npc, 5, true)
+      end
+      if SetPedCombatAbility then SetPedCombatAbility(npc, 2) end
+      if SetPedCombatRange then SetPedCombatRange(npc, 2) end
+      if SetPedCombatMovement then SetPedCombatMovement(npc, 2) end
+      if SetPedArmour then SetPedArmour(npc, 999) end
+      if SetEntityHealth then SetEntityHealth(npc, 1000) end
       TaskCombatPed(npc, targetPed, 0, 16)
     end
   end
@@ -6268,6 +6360,13 @@ function Menu.RefreshOnlinePlayers()
           type = "action",
           onClick = function()
             Menu.CloneNPCAttackPlayerFun(selectedPlayer)
+          end
+        },
+        {
+          name = "Clone NPC Attack RPG",
+          type = "action",
+          onClick = function()
+            Menu.CloneNPCAttackPlayerRPG(selectedPlayer)
           end
         },
         {
