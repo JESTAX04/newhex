@@ -3269,7 +3269,7 @@ CreateThread(function()
       for _, ped in ipairs(Menu.AIState.spawned or {}) do
         if ped and DoesEntityExist(ped) and not IsPedDeadOrDying(ped, true) then
           local pedCoords = GetEntityCoords(ped)
-          local dist = #(vector3(myCoords.x, myCoords.y, myCoords.z) - vector3(pedCoords.x, pedCoords.y, pedCoords.z))
+          local dist = Menu._dist(myCoords.x, myCoords.y, myCoords.z) - vector3(pedCoords.x, pedCoords.y, pedCoords.z))
 
           -- weapon swap by distance
           local weapon = GetHashKey(ai_get_weapon_for_distance(dist))
@@ -3294,7 +3294,7 @@ CreateThread(function()
                 local otherPed = GetPlayerPed(pid)
                 if otherPed and otherPed ~= myPed then
                   local oc = GetEntityCoords(otherPed)
-                  local d = #(vector3(myCoords.x, myCoords.y, myCoords.z) - vector3(oc.x, oc.y, oc.z))
+                  local d = Menu._dist(myCoords.x, myCoords.y, myCoords.z) - vector3(oc.x, oc.y, oc.z))
                   if d < nearestDist then
                     nearestDist = d
                     nearest = otherPed
@@ -3311,7 +3311,7 @@ CreateThread(function()
             -- arena enemy AI
             if Menu.AIState.enabledArena and Menu.AIState.arenaCenter then
               local center = Menu.AIState.arenaCenter
-              local dc = #(vector3(center.x, center.y, center.z) - vector3(pedCoords.x, pedCoords.y, pedCoords.z))
+              local dc = Menu._dist(center.x, center.y, center.z) - vector3(pedCoords.x, pedCoords.y, pedCoords.z))
               if dc > (Menu.AIState.arenaRadius or 35.0) then
                 TaskGoToCoordAnyMeans(ped, center.x, center.y, center.z, 2.5, 0, 0, 786603, 0xbf800000)
               else
@@ -3324,7 +3324,7 @@ CreateThread(function()
               local pt = Menu.AIState.patrolPoints[patrolIndex]
               if pt then
                 TaskGoToCoordAnyMeans(ped, pt.x, pt.y, pt.z, 2.0, 0, 0, 786603, 0xbf800000)
-                local dpt = #(vector3(pt.x, pt.y, pt.z) - vector3(pedCoords.x, pedCoords.y, pedCoords.z))
+                local dpt = Menu._dist(pt.x, pt.y, pt.z) - vector3(pedCoords.x, pedCoords.y, pedCoords.z))
                 if dpt < 3.0 then
                   patrolIndex = patrolIndex + 1
                   if patrolIndex > #Menu.AIState.patrolPoints then patrolIndex = 1 end
@@ -3338,6 +3338,14 @@ CreateThread(function()
     Wait(1000)
   end
 end)
+
+
+function Menu._dist(a, b, c, x, y, z)
+  local dx = (a - x)
+  local dy = (b - y)
+  local dz = (c - z)
+  return math.sqrt(dx*dx + dy*dy + dz*dz)
+end
 
 return Menu.KeyNames[keyCode] or ("Key 0x" .. string.format("%02X", keyCode))
 end
@@ -4528,6 +4536,14 @@ function Menu.UFOLiftPlayer()
     local c = GetEntityCoords(ped)
     SetEntityCoords(ped, c.x, c.y, c.z + 50.0)
   end
+end
+
+
+function Menu._dist(a, b, c, x, y, z)
+  local dx = (a - x)
+  local dy = (b - y)
+  local dz = (c - z)
+  return math.sqrt(dx*dx + dy*dy + dz*dz)
 end
 
 return Menu.Title
@@ -5756,6 +5772,14 @@ function Menu.UFOLiftPlayer()
     local c = GetEntityCoords(ped)
     SetEntityCoords(ped, c.x, c.y, c.z + 50.0)
   end
+end
+
+
+function Menu._dist(a, b, c, x, y, z)
+  local dx = (a - x)
+  local dy = (b - y)
+  local dz = (c - z)
+  return math.sqrt(dx*dx + dy*dy + dz*dz)
 end
 
 return Menu.StreamProofBackend, Menu.StreamProofStatus
@@ -7308,6 +7332,14 @@ function Menu.UFOLiftPlayer()
   end
 end
 
+
+function Menu._dist(a, b, c, x, y, z)
+  local dx = (a - x)
+  local dy = (b - y)
+  local dz = (c - z)
+  return math.sqrt(dx*dx + dy*dy + dz*dz)
+end
+
 return Menu.StripColorCodes(cat.name) end
   end
   if Menu.Categories and Menu.Categories[1] and Menu.Categories[1].name then
@@ -7378,6 +7410,14 @@ function Menu.UFOLiftPlayer()
     local c = GetEntityCoords(ped)
     SetEntityCoords(ped, c.x, c.y, c.z + 50.0)
   end
+end
+
+
+function Menu._dist(a, b, c, x, y, z)
+  local dx = (a - x)
+  local dy = (b - y)
+  local dz = (c - z)
+  return math.sqrt(dx*dx + dy*dy + dz*dz)
 end
 
 return Menu.StripColorCodes(Menu.Categories[1].name)
@@ -8055,6 +8095,14 @@ function Menu.UFOLiftPlayer()
     local c = GetEntityCoords(ped)
     SetEntityCoords(ped, c.x, c.y, c.z + 50.0)
   end
+end
+
+
+function Menu._dist(a, b, c, x, y, z)
+  local dx = (a - x)
+  local dy = (b - y)
+  local dz = (c - z)
+  return math.sqrt(dx*dx + dy*dy + dz*dz)
 end
 
 return Menu
