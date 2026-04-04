@@ -1511,7 +1511,7 @@ function Menu.DrawFooter()
     local scale = Menu.Scale or 1.0
     local st = Menu.PhazeStyle or {}
     local totalRows = math.min(Menu.ItemsPerPage, math.max(0, #Menu.Categories - 1))
-    local footerY = p.y + (Menu.Banner.height * scale) + p.mainMenuHeight + (totalRows * p.itemHeight) + p.footerSpacing
+    local footerY = p.y + (Menu.Banner.height * scale) + p.mainMenuHeight + (totalRows * p.itemHeight)
     local footerTextLeft = "Build: 262119"
     local footerTextRight = string.format("%d / %d", math.max(1, Menu.CurrentCategory - 1), math.max(1, math.max(0, #Menu.Categories - 1)))
 
