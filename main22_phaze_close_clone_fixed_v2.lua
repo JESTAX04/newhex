@@ -1507,101 +1507,26 @@ function Menu.DrawLoadingBar(alpha)
 end
 
 function Menu.DrawFooter()
-    local scaledPos = Menu.GetScaledPosition()
+    local p = Menu.GetScaledPosition()
     local scale = Menu.Scale or 1.0
-    local x = scaledPos.x
-    local footerY
-    local totalHeight
-    
-    local bannerHeight = Menu.Banner.enabled and (Menu.Banner.height * scale) or scaledPos.headerHeight
+    local st = Menu.PhazeStyle or {}
+    local totalRows = math.min(Menu.ItemsPerPage, math.max(0, #Menu.Categories - 1))
+    local footerY = p.y + (Menu.Banner.height * scale) + p.mainMenuHeight + (totalRows * p.itemHeight) + p.footerSpacing
+    local footerTextLeft = "Build: 262119"
+    local footerTextRight = string.format("%d / %d", math.max(1, Menu.CurrentCategory - 1), math.max(1, math.max(0, #Menu.Categories - 1)))
 
-    if Menu.OpenedCategory then
-        local category = Menu.Categories[Menu.OpenedCategory]
-        if category and category.hasTabs and category.tabs then
-            local currentTab = category.tabs[Menu.CurrentTab]
-            if currentTab and currentTab.items then
-                local maxVisible = Menu.ItemsPerPage
-                local totalItems = #currentTab.items
-                local visibleItems = math.min(maxVisible, totalItems)
-                totalHeight = bannerHeight + scaledPos.mainMenuHeight + scaledPos.mainMenuSpacing + (visibleItems * scaledPos.itemHeight)
-            else
-                totalHeight = bannerHeight + scaledPos.mainMenuHeight + scaledPos.mainMenuSpacing
-            end
-        else
-            totalHeight = bannerHeight + scaledPos.mainMenuHeight + scaledPos.mainMenuSpacing
-        end
-    else
-        local maxVisible = Menu.ItemsPerPage
-        local totalCategories = #Menu.Categories - 1
-        local visibleCategories = math.min(maxVisible, totalCategories)
-        totalHeight = bannerHeight + scaledPos.mainMenuHeight + scaledPos.mainMenuSpacing + (visibleCategories * scaledPos.itemHeight)
-    end
+    Menu.DrawPhazeBox(p.x, footerY, p.width, p.footerHeight, st.footer or {r=0,g=0,b=0,a=235}, 0)
 
-    footerY = scaledPos.y + totalHeight + scaledPos.footerSpacing
-    local footerWidth = scaledPos.width - 1
-    local footerHeight = scaledPos.footerHeight
-    local footerRounding = scaledPos.footerRadius
+    local leftIcon = "A"
+    local leftIconX = p.x + (10 * scale)
+    local leftTextX = p.x + (28 * scale)
+    local textY = footerY + (p.footerHeight / 2) - (8 * scale)
 
-    if Susano and Susano.DrawRectFilled then
-        Susano.DrawRectFilled(x, footerY, footerWidth, footerHeight,
-            0.0, 0.0, 0.0, 1.0,
-            footerRounding)
-    else
-        Menu.DrawRoundedRect(x, footerY, footerWidth, footerHeight, 0, 0, 0, 255, footerRounding)
-    end
+    Menu.DrawText(leftIconX, textY, leftIcon, 14, 1.0, 1.0, 1.0, 1.0)
+    Menu.DrawText(leftTextX, textY, footerTextLeft, 15, 1.0, 1.0, 1.0, 1.0)
 
-    local footerPadding = 15 * scale
-    local footerSize = 13
-    local scaledFooterSize = footerSize * scale
-    local footerTextY = footerY + (footerHeight / 2) - (scaledFooterSize / 2) + (1 * scale)
-
-    local footerText = " https://discord.gg/zP8MaFP9uM "
-    local currentX = x + footerPadding
-
-    local textWidth = 0
-    if Susano and Susano.GetTextWidth then
-        textWidth = Susano.GetTextWidth(footerText, scaledFooterSize)
-    else
-        textWidth = string.len(footerText) * 8 * scale
-    end
-
-    Menu.DrawText(currentX, footerTextY, footerText, footerSize, Menu.Colors.TextWhite.r / 255.0, Menu.Colors.TextWhite.g / 255.0, Menu.Colors.TextWhite.b / 255.0, 1.0)
-
-    local displayIndex
-    local totalItems
-
-    if Menu.OpenedCategory then
-        local category = Menu.Categories[Menu.OpenedCategory]
-        if category and category.hasTabs and category.tabs then
-            local currentTab = category.tabs[Menu.CurrentTab]
-            if currentTab and currentTab.items then
-                displayIndex = Menu.CurrentItem
-                totalItems = #currentTab.items
-            else
-                displayIndex = 1
-                totalItems = 1
-            end
-        else
-            displayIndex = 1
-            totalItems = 1
-        end
-    else
-        displayIndex = Menu.CurrentCategory - 1
-        if displayIndex < 1 then displayIndex = 1 end
-        totalItems = #Menu.Categories - 1
-    end
-
-    local posText = string.format("%d/%d", displayIndex, totalItems)
-
-    local posWidth = 0
-    if Susano and Susano.GetTextWidth then
-        posWidth = Susano.GetTextWidth(posText, scaledFooterSize)
-    else
-        posWidth = string.len(posText) * 8 * scale
-    end
-
-    local posX = x + footerWidth - posWidth - footerPadding
-    Menu.DrawText(posX, footerTextY, posText, footerSize, Menu.Colors.TextWhite.r / 255.0, Menu.Colors.TextWhite.g / 255.0, Menu.Colors.TextWhite.b / 255.0, 1.0)
+    local rw = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(footerTextRight, 15 * scale)) or (#footerTextRight * 7 * scale)
+    Menu.DrawText(p.x + p.width - rw - (12 * scale), textY, footerTextRight, 15, 1.0, 1.0, 1.0, 1.0)
 end
 
 function Menu.DrawKeySelector(alpha)
