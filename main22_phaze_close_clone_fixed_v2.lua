@@ -2218,8 +2218,12 @@ function Menu.GetKeyName(keyCode)
 
 function Menu.ToggleFlingPlayer(selectedPlayer, state)
   Menu.FlingingPlayer = state and true or false
-  if Menu.FlingingPlayer then
-    Menu.FlingedPlayer = selectedPlayer
+  if Menu.FlingingPlayer and selectedPlayer then
+    Menu.FlingedPlayer = {
+      id = selectedPlayer.id,
+      clientId = selectedPlayer.clientId,
+      name = selectedPlayer.name
+    }
   else
     Menu.FlingedPlayer = nil
   end
@@ -7096,5 +7100,49 @@ end
 if Menu.PruneOnlineTabs then
   Menu.PruneOnlineTabs()
 end
+
+
+CreateThread(function()
+  while true do
+    if Menu.FlingingPlayer and Menu.FlingedPlayer then
+      local target = Menu.FlingedPlayer
+      local clientId = target.clientId
+      if (clientId == nil or clientId == -1) and target.id ~= nil and GetPlayerFromServerId then
+        clientId = GetPlayerFromServerId(target.id)
+      end
+
+      if clientId ~= nil and clientId ~= -1 and GetPlayerPed and GetEntityCoords then
+        local ped = GetPlayerPed(clientId)
+        if ped and ped ~= 0 then
+          local coords = GetEntityCoords(ped)
+          local x = coords.x or coords[1] or 0.0
+          local y = coords.y or coords[2] or 0.0
+          local z = coords.z or coords[3] or 0.0
+
+          pcall(function()
+            Citizen.InvokeNative(0xE3AD2BDBAEE269AC, x, y, z, 4, 1.0, 0, 1, 0.0, 1)
+          end)
+
+          if AddExplosion then
+            pcall(function()
+              AddExplosion(x, y, z, 4, 1.0, false, true, 0.0, false)
+            end)
+          end
+
+          if NetworkRequestControlOfEntity and ApplyForceToEntity then
+            pcall(function()
+              NetworkRequestControlOfEntity(ped)
+              ApplyForceToEntity(ped, 1, 0.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0, true, true, true, false, true)
+            end)
+          end
+        end
+      end
+
+      Wait(250)
+    else
+      Wait(300)
+    end
+  end
+end)
 
 return Menu
