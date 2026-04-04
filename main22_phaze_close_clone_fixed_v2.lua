@@ -6937,8 +6937,6 @@ function Menu.DrawFooter()
     Menu.DrawText(p.x + p.width - tw2 - 16, footerY + 7, posText, 13, st.dim.r/255, st.dim.g/255, st.dim.b/255, 1.0)
 end
 
-return Menu
-
 
 -- ===== PHAZE CLOSE-CLONE MAIN MENU OVERRIDE =====
 Menu.DrawCategoriesOriginalPhazeBase = Menu.DrawCategories
@@ -7055,3 +7053,5 @@ function Menu.DrawFooter()
     local rw = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(footerTextRight, 15 * scale)) or (#footerTextRight * 7 * scale)
     Menu.DrawText(p.x + p.width - rw - (10 * scale), footerY + (p.footerHeight / 2) - (8 * scale), footerTextRight, 15, 1.0, 1.0, 1.0, 1.0)
 end
+
+return Menu
