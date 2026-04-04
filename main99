@@ -1,4 +1,4 @@
-local Menu = {}
+wlocal Menu = {}
 Menu.Visible = true
 Menu.CurrentCategory = 2
 Menu.CurrentPage = 1
@@ -279,32 +279,31 @@ function Menu.DrawText(x, y, text, size_px, r, g, b, a)
 end
 
 function Menu.DrawHeader()
-    local scaledPos = Menu.GetScaledPosition()
+    local p = Menu.GetScaledPosition()
     local scale = Menu.Scale or 1.0
-    local x = scaledPos.x
-    local y = scaledPos.y
-    local width = scaledPos.width - 1
-    local height = scaledPos.headerHeight
-    local radius = scaledPos.headerRadius
+    local st = Menu.PhazeStyle or {}
+    local x = p.x
+    local y = p.y
+    local width = p.width
     local bannerHeight = Menu.Banner.height * scale
 
-    if Menu.Banner.enabled then
-        if Menu.bannerTexture and Menu.bannerTexture > 0 and Susano and Susano.DrawImage then
-            
-            Susano.DrawImage(Menu.bannerTexture, x, y, width, bannerHeight, 1, 1, 1, 1, 0)
-        else
-            Menu.DrawRect(x, y, width, height, Menu.Colors.HeaderPink.r, Menu.Colors.HeaderPink.g, Menu.Colors.HeaderPink.b, 255)
-
-            local logoX = x + width / 2 - 12
-            local logoY = y + height / 2 - 20
-            Menu.DrawText(logoX, logoY, "P", 44, 1.0, 1.0, 1.0, 1.0)
-        end
+    if Susano and Susano.DrawRectFilled then
+        Susano.DrawRectFilled(x, y, width, bannerHeight, (st.panel.r or 0)/255, (st.panel.g or 0)/255, (st.panel.b or 0)/255, 0.98, 0)
+        Susano.DrawRectFilled(x, y, width, bannerHeight * 0.55, 18/255, 30/255, 60/255, 0.28, 0)
+        Susano.DrawRectFilled(x, y + bannerHeight - 3, width, 3, (st.blue.r or 33)/255, (st.blue.g or 135)/255, (st.blue.b or 255)/255, 1.0, 0)
     else
-        Menu.DrawRect(x, y, width, height, Menu.Colors.HeaderPink.r, Menu.Colors.HeaderPink.g, Menu.Colors.HeaderPink.b, 255)
+        Menu.DrawRect(x, y, width, bannerHeight, 2, 7, 15, 250)
+        Menu.DrawRect(x, y + bannerHeight - 3, width, 3, 33, 135, 255, 255)
+    end
 
-        local logoX = x + width / 2 - 12
-        local logoY = y + height / 2 - 20
-        Menu.DrawText(logoX, logoY, "P", 44, 1.0, 1.0, 1.0, 1.0)
+    if Menu.Banner.enabled and Menu.bannerTexture and Menu.bannerTexture > 0 and Susano and Susano.DrawImage then
+        Susano.DrawImage(Menu.bannerTexture, x, y, width, bannerHeight, 1, 1, 1, 1, 0)
+    else
+        if Susano and Susano.DrawRectFilled then
+            Susano.DrawRectFilled(x + (18 * scale), y + (16 * scale), 52 * scale, 52 * scale, 14/255, 60/255, 155/255, 0.15, 10 * scale)
+        end
+        Menu.DrawText(x + (24 * scale), y + (18 * scale), "A", 30, 0.20, 0.66, 1.0, 1.0)
+        Menu.DrawText(x + (82 * scale), y + (20 * scale), "Phaze", 34, 1.0, 1.0, 1.0, 1.0)
     end
 end
 
@@ -407,36 +406,11 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
         return
     end
 
-    local tabs = {}
-    if tostring(category.name or "") == "Online" then
-        for _, tab in ipairs(category.tabs) do
-            local nm = tostring(tab.name or "")
-            if nm ~= "Vehicle" and nm ~= "all" then
-                tabs[#tabs + 1] = tab
-            end
-        end
-    else
-        tabs = category.tabs
-    end
-
-    local numTabs = #tabs
+    local numTabs = #category.tabs
     if numTabs < 1 then return end
 
-    local selectedTab = category.tabs[Menu.CurrentTab]
-    local selectedFiltered = 1
-    if tostring(category.name or "") == "Online" and selectedTab then
-        for i, tab in ipairs(tabs) do
-            if tab == selectedTab then
-                selectedFiltered = i
-                break
-            end
-        end
-    else
-        selectedFiltered = Menu.CurrentTab
-    end
-
     local outerPad = 6 * scale
-    local gap = 8 * scale
+    local gap = (numTabs >= 5) and (4 * scale) or (8 * scale)
     local innerX = x + outerPad
     local innerWidth = width - (outerPad * 2)
     local containerY = startY + (4 * scale)
@@ -446,8 +420,14 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
     local tabWidth = (innerWidth - totalGap) / numTabs
     local currentX = innerX
 
-    local targetX = innerX + ((selectedFiltered - 1) * (tabWidth + gap))
-    local targetW = tabWidth
+    local targetX, targetW = innerX, tabWidth
+    for i = 1, numTabs do
+        if i == Menu.CurrentTab then
+            targetX = innerX + ((i - 1) * (tabWidth + gap))
+            targetW = tabWidth
+            break
+        end
+    end
 
     if Menu.TabSelectorX == 0 then
         Menu.TabSelectorX = targetX
@@ -457,47 +437,55 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
     local smooth = 0.22
     Menu.TabSelectorX = Menu.TabSelectorX + (targetX - Menu.TabSelectorX) * smooth
     Menu.TabSelectorWidth = Menu.TabSelectorWidth + (targetW - Menu.TabSelectorWidth) * smooth
+    if math.abs(Menu.TabSelectorX - targetX) < 0.5 then Menu.TabSelectorX = targetX end
+    if math.abs(Menu.TabSelectorWidth - targetW) < 0.5 then Menu.TabSelectorWidth = targetW end
 
-    local function getTabIcon(tabName)
-        local name = tostring(tabName or "")
-        if name == "Player List" then return "P" end
-        if name == "Troll" then return "T" end
-        if name == "Players" then return "O" end
-        return ">"
-    end
-
-    for i, tab in ipairs(tabs) do
+    for i, tab in ipairs(category.tabs) do
         local tabX = currentX
-        local isSelected = (i == selectedFiltered)
+        local currentTabWidth = tabWidth
+        local isSelected = (i == Menu.CurrentTab)
 
         if Susano and Susano.DrawRectFilled then
             if isSelected then
                 Susano.DrawRectFilled(Menu.TabSelectorX, containerY, Menu.TabSelectorWidth, containerH, 188/255, 19/255, 29/255, 0.98, 8 * scale)
+                Susano.DrawRectFilled(Menu.TabSelectorX, containerY + 1, Menu.TabSelectorWidth, containerH * 0.30, 1.0, 1.0, 1.0, 0.03, 8 * scale)
+                Susano.DrawRectFilled(Menu.TabSelectorX, containerY + containerH - (2 * scale), Menu.TabSelectorWidth, 2 * scale, 1.0, 0.30, 0.34, 1.0, 0)
             else
-                Susano.DrawRectFilled(tabX, containerY, tabWidth, containerH, 12/255, 16/255, 28/255, 0.96, 8 * scale)
+                Susano.DrawRectFilled(tabX, containerY, currentTabWidth, containerH, 12/255, 16/255, 28/255, 0.96, 8 * scale)
             end
         else
             if isSelected then
                 Menu.DrawRoundedRect(Menu.TabSelectorX, containerY, Menu.TabSelectorWidth, containerH, 188, 19, 29, 250, 8 * scale)
             else
-                Menu.DrawRoundedRect(tabX, containerY, tabWidth, containerH, 12, 16, 28, 245, 8 * scale)
+                Menu.DrawRoundedRect(tabX, containerY, currentTabWidth, containerH, 12, 16, 28, 245, 8 * scale)
             end
         end
 
         local rawText = Menu.StripColorCodes and Menu.StripColorCodes(tab.name) or tostring(tab.name)
-        local label = rawText == "Player List" and "Player" or rawText
-        local icon = getTabIcon(rawText)
+        local text = rawText
+        if numTabs >= 5 then
+            if rawText == "Player List" then text = "Player" end
+            if rawText == "Players" then text = "Players" end
+            if rawText == "Vehicle" then text = "Vehicle" end
+        end
 
-        local iconSize = 11
-        local textSize = 12
-        local iconWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(icon, iconSize * scale)) or (string.len(icon) * 7 * scale)
-        local textWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(label, textSize * scale)) or (string.len(label) * 7 * scale)
-        local totalWidth2 = iconWidth + (6 * scale) + textWidth
-        local contentX = tabX + (tabWidth / 2) - (totalWidth2 / 2)
-        local textY = containerY + (containerH / 2) - ((textSize * scale) / 2) + (1 * scale)
+        local textSize = (numTabs >= 5) and 12 or 14
+        local scaledTextSize = textSize * scale
+        local textWidth = 0
+        if Susano and Susano.GetTextWidth then
+            textWidth = Susano.GetTextWidth(text, scaledTextSize)
+        else
+            textWidth = string.len(text) * 7 * scale
+        end
 
-        Menu.DrawText(contentX, textY, icon, iconSize, 1.0, 1.0, 1.0, 1.0)
-        Menu.DrawText(contentX + iconWidth + (6 * scale), textY, label, textSize, 1.0, 1.0, 1.0, 1.0)
+        while textWidth > (currentTabWidth - (10 * scale)) and #text > 3 do
+            text = string.sub(text, 1, #text - 1)
+            textWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(text, scaledTextSize)) or (string.len(text) * 7 * scale)
+        end
+
+        local textX = tabX + (currentTabWidth / 2) - (textWidth / 2)
+        local textY = containerY + (containerH / 2) - (scaledTextSize / 2) + (1 * scale)
+        Menu.DrawText(textX, textY, text, textSize, 1.0, 1.0, 1.0, 1.0)
 
         currentX = currentX + tabWidth + gap
     end
@@ -2736,7 +2724,6 @@ function Menu.BuildParticleLoopItems(selectedPlayer)
             onClick = function()
                 Menu.PlayerList.submenu = nil
                 Menu.RefreshOnlinePlayers()
-    Menu.PruneOnlineTabs()
             end
         },
         { isSeparator = true, separatorText = "PARTICLE EFFECTS" },
@@ -5560,44 +5547,9 @@ function Menu.RefreshServerCategory()
             end
         end
     end
-
-function Menu.PruneOnlineTabs()
-    local function pruneList(list)
-        if type(list) ~= "table" then return end
-        for _, cat in ipairs(list) do
-            if cat and tostring(cat.name or "") == "Online" and type(cat.tabs) == "table" then
-                local keep = {}
-                for _, tab in ipairs(cat.tabs) do
-                    local nm = tostring(tab.name or "")
-                    if nm ~= "Vehicle" and nm ~= "all" then
-                        keep[#keep + 1] = tab
-                    end
-                end
-                cat.tabs = keep
-                if Menu.CurrentTab > #cat.tabs then
-                    Menu.CurrentTab = 1
-                end
-            end
-        end
-    end
-
-    if Menu.TopLevelTabs then
-        for _, top in ipairs(Menu.TopLevelTabs) do
-            if top and type(top.categories) == "table" then
-                pruneList(top.categories)
-            end
-        end
-    end
-
-    if Menu.Categories then
-        pruneList(Menu.Categories)
-    end
-end
-
 end
 
 function Menu.EnsureOnlineCategory()
-                Menu.PruneOnlineTabs()
     if Menu.TopLevelTabs then
         for _, top in ipairs(Menu.TopLevelTabs) do
             if top and type(top.categories) == "table" then
@@ -6289,7 +6241,6 @@ function Menu.UpdateCategoriesFromTopTab()
     _Menu_OriginalUpdateCategoriesFromTopTab_Online()
     pcall(function()
         Menu.EnsureOnlineCategory()
-                Menu.PruneOnlineTabs()
         Menu.RefreshOnlinePlayers()
     end)
 end
@@ -6307,7 +6258,6 @@ function Menu.Render()
     if Menu.Visible then
         pcall(function()
             Menu.EnsureOnlineCategory()
-                Menu.PruneOnlineTabs()
             if Menu.PlayerList and #(Menu.PlayerList.players or {}) == 0 then
                 Menu.RefreshOnlinePlayers()
             end
@@ -6325,7 +6275,6 @@ CreateThread(function()
     while true do
         pcall(function()
             Menu.EnsureOnlineCategory()
-                Menu.PruneOnlineTabs()
             if Menu.PlayerList and Menu.PlayerList.enabled then
                 local now = GetGameTimer and GetGameTimer() or 0
                 if now - (Menu.PlayerList.lastRefresh or 0) >= (Menu.PlayerList.refreshInterval or 2000) then
@@ -6502,6 +6451,31 @@ Menu.NextStyle = {
 st = Menu.NextStyle
 
 Menu.UIVariant = "next"
+
+
+Menu.PhazeStyle = {
+    blue = { r = 33, g = 135, b = 255, a = 255 },
+    blueSoft = { r = 20, g = 92, b = 201, a = 255 },
+    panel = { r = 2, g = 7, b = 15, a = 242 },
+    panel2 = { r = 5, g = 10, b = 20, a = 242 },
+    row = { r = 4, g = 8, b = 16, a = 235 },
+    rowSelected = { r = 28, g = 120, b = 245, a = 245 },
+    border = { r = 16, g = 28, b = 48, a = 255 },
+    white = { r = 245, g = 247, b = 250, a = 255 },
+    muted = { r = 180, g = 190, b = 210, a = 255 },
+    footer = { r = 0, g = 0, b = 0, a = 235 }
+}
+
+function Menu.DrawPhazeBox(x, y, w, h, col, round)
+    round = round or 0
+    if Susano and Susano.DrawRectFilled then
+        Susano.DrawRectFilled(x, y, w, h, (col.r or 0)/255, (col.g or 0)/255, (col.b or 0)/255, (col.a or 255)/255, round)
+    else
+        Menu.DrawRoundedRect(x, y, w, h, col.r or 0, col.g or 0, col.b or 0, col.a or 255, round)
+    end
+end
+
+
 
 Menu.UIEffects = {
     glass = true,
@@ -6963,109 +6937,42 @@ function Menu.DrawFooter()
     Menu.DrawText(p.x + p.width - tw2 - 16, footerY + 7, posText, 13, st.dim.r/255, st.dim.g/255, st.dim.b/255, 1.0)
 end
 
-
--- ===== CATEGORY ICON SIDEBAR OVERRIDE =====
-Menu.DrawCategoriesBase = Menu.DrawCategories
+return Menu
 
 
-Menu.CategoryIconUrls = {
-    player = "https://i.imgur.com/6Xu87Lf.png",
-    online = "https://i.imgur.com/gyzVWIh.png",
-    vehicle = "https://i.imgur.com/MNEcZrB.png",
-    visual = "https://i.imgur.com/64McFxW.png",
-    combat = "https://i.imgur.com/I0zdEPo.png",
-    miscellaneous = "https://i.imgur.com/tCYUmFg.png",
-    settings = "https://i.imgur.com/i1eMSyJ.png",
-}
+-- ===== PHAZE CLOSE-CLONE MAIN MENU OVERRIDE =====
+Menu.DrawCategoriesOriginalPhazeBase = Menu.DrawCategories
 
-Menu.CategoryIconTextures = Menu.CategoryIconTextures or {}
-
-function Menu.GetCategoryIconKey(name)
-    local n = string.lower(tostring(name or ""))
-    if n:find("player") or n:find("self") then return "player" end
-    if n:find("online") then return "online" end
-    if n:find("vehicle") then return "vehicle" end
-    if n:find("visual") then return "visual" end
-    if n:find("weapon") or n:find("combat") then return "combat" end
-    if n:find("misc") then return "miscellaneous" end
-    if n:find("setting") then return "settings" end
-    return nil
-end
-
-function Menu.LoadCategoryIconTexture(key)
-    if not key or Menu.CategoryIconTextures[key] then return end
-    local url = Menu.CategoryIconUrls and Menu.CategoryIconUrls[key]
-    if not url or not Susano or not Susano.HttpGet or not Susano.LoadTextureFromBuffer then return end
-
-    local function doLoad()
-        local ok, _ = pcall(function()
-            local status, body = Susano.HttpGet(url)
-            if status == 200 and body and #body > 0 then
-                local textureId, width, height = Susano.LoadTextureFromBuffer(body)
-                if textureId and textureId ~= 0 then
-                    Menu.CategoryIconTextures[key] = {
-                        id = textureId,
-                        width = width or 0,
-                        height = height or 0
-                    }
-                end
-            end
-        end)
-        return ok
-    end
-
-    if CreateThread then
-        CreateThread(function() doLoad() end)
-    else
-        doLoad()
-    end
-end
-
-function Menu.DrawCategorySidebarVisual(name, x, y, size, selected)
-    local key = Menu.GetCategoryIconKey(name)
-    if key then
-        Menu.LoadCategoryIconTexture(key)
-        local tex = Menu.CategoryIconTextures[key]
-        if tex and tex.id and tex.id ~= 0 and Susano and Susano.DrawImage then
-            local pad = size * 0.18
-            Susano.DrawImage(tex.id, x + pad, y + pad, size - (pad * 2), size - (pad * 2), 1, 1, 1, 1, 0)
-            return
-        end
-    end
-
-    local fallback = Menu.GetCategorySidebarIcon(name)
-    local iconW = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(fallback, 16 * (Menu.Scale or 1.0))) or (2 * 8 * (Menu.Scale or 1.0))
-    Menu.DrawText(x + (size / 2) - (iconW / 2), y + (size / 2) - (9 * (Menu.Scale or 1.0)), fallback, 16, 1.0, 1.0, 1.0, 1.0)
-end
-
-function Menu.GetCategorySidebarIcon(name)
+function Menu.GetPhazeCategoryIcon(name)
     local n = string.lower(tostring(name or ""))
     if n:find("player") or n:find("self") then return "P" end
-    if n:find("online") then return "O" end
+    if n:find("server") then return "S" end
+    if n:find("weapon") then return "W" end
+    if n:find("combat") then return "C" end
     if n:find("vehicle") then return "V" end
-    if n:find("visual") then return "E" end
-    if n:find("weapon") or n:find("combat") then return "W" end
+    if n:find("visual") then return "O" end
     if n:find("misc") then return "M" end
-    if n:find("exploit") or n:find("troll") then return "X" end
-    if n:find("setting") then return "S" end
-    if n:find("server") then return "R" end
+    if n:find("setting") then return "G" end
+    if n:find("search") then return "Q" end
+    if n:find("online") then return "N" end
     return "•"
 end
 
 function Menu.DrawCategories()
     if Menu.OpenedCategory then
-        return Menu.DrawCategoriesBase()
+        return Menu.DrawCategoriesOriginalPhazeBase()
     end
 
-    local scaledPos = Menu.GetScaledPosition()
+    local p = Menu.GetScaledPosition()
     local scale = Menu.Scale or 1.0
-    local x = scaledPos.x
-    local bannerHeight = Menu.Banner.enabled and (Menu.Banner.height * scale) or scaledPos.headerHeight
-    local startY = scaledPos.y + bannerHeight
-    local width = scaledPos.width
-    local itemHeight = scaledPos.itemHeight
-    local mainMenuHeight = scaledPos.mainMenuHeight
-    local mainMenuSpacing = scaledPos.mainMenuSpacing
+    local st = Menu.PhazeStyle or {}
+    local x = p.x
+    local bannerHeight = Menu.Banner.enabled and (Menu.Banner.height * scale) or p.headerHeight
+    local startY = p.y + bannerHeight
+    local width = p.width
+    local itemHeight = p.itemHeight
+    local mainMenuHeight = p.mainMenuHeight
+    local mainMenuSpacing = p.mainMenuSpacing
 
     local totalCategories = #Menu.Categories - 1
     local maxVisible = Menu.ItemsPerPage
@@ -7076,19 +6983,16 @@ function Menu.DrawCategories()
         Menu.CategoryScrollOffset = math.max(0, Menu.CurrentCategory - 2)
     end
 
-    local titleBgY = startY
-    if Susano and Susano.DrawRectFilled then
-        Susano.DrawRectFilled(x, titleBgY, width, mainMenuHeight, 10/255, 14/255, 24/255, 0.96, 0)
-    else
-        Menu.DrawRect(x, titleBgY, width, mainMenuHeight, 10, 14, 24, 245)
-    end
+    Menu.DrawPhazeBox(x, startY, width, mainMenuHeight, {r=0,g=0,b=0,a=235}, 0)
+    local title = "Main menu"
+    local tw = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(title, 17 * scale)) or (#title * 8 * scale)
+    Menu.DrawText(x + (10 * scale), startY + (mainMenuHeight / 2) - (9 * scale), title, 17, 1.0, 1.0, 1.0, 1.0)
 
-    local headerText = "Main Menu"
-    if Menu.Categories and Menu.Categories[1] and Menu.Categories[1].name then
-        headerText = Menu.StripColorCodes and Menu.StripColorCodes(Menu.Categories[1].name) or tostring(Menu.Categories[1].name)
-    end
-    local tw = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(headerText, 18 * scale)) or (#headerText * 8 * scale)
-    Menu.DrawText(x + (width / 2) - (tw / 2), titleBgY + (mainMenuHeight / 2) - (9 * scale), headerText, 18, 1.0, 1.0, 1.0, 1.0)
+    local railX = x + (4 * scale)
+    local listStartY = startY + mainMenuHeight + mainMenuSpacing
+    local listHeight = math.min(maxVisible, totalCategories) * itemHeight
+    if listHeight < itemHeight then listHeight = itemHeight end
+    Menu.DrawPhazeBox(railX, listStartY, 4 * scale, listHeight, st.blue or {r=33,g=135,b=255,a=255}, 0)
 
     local actualVisibleCount = 0
     for displayIndex = 1, math.min(maxVisible, totalCategories) do
@@ -7097,55 +7001,58 @@ function Menu.DrawCategories()
             actualVisibleCount = actualVisibleCount + 1
             local category = Menu.Categories[categoryIndex]
             local isSelected = (categoryIndex == Menu.CurrentCategory)
-            local itemY = startY + mainMenuHeight + mainMenuSpacing + (displayIndex - 1) * itemHeight
 
-            local rowX = x + (6 * scale)
-            local rowY = itemY + (2 * scale)
-            local rowW = width - (12 * scale)
-            local rowH = itemHeight - (4 * scale)
-            local iconRailW = 46 * scale
-            local iconBoxSize = 28 * scale
-            local iconBoxX = rowX + (8 * scale)
-            local iconBoxY = rowY + (rowH / 2) - (iconBoxSize / 2)
+            local rowY = listStartY + ((displayIndex - 1) * itemHeight)
+            local rowX = x + (10 * scale)
+            local rowW = width - (18 * scale)
+            local rowH = itemHeight - (2 * scale)
 
-            if Susano and Susano.DrawRectFilled then
-                if isSelected then
-                    Susano.DrawRectFilled(rowX, rowY, rowW, rowH, 189/255, 19/255, 29/255, 0.98, 8 * scale)
-                    Susano.DrawRectFilled(rowX + 1, rowY + 1, rowW - 2, rowH * 0.35, 1.0, 1.0, 1.0, 0.025, 8 * scale)
-                else
-                    Susano.DrawRectFilled(rowX, rowY, rowW, rowH, 10/255, 14/255, 24/255, 0.96, 8 * scale)
+            if isSelected then
+                Menu.DrawPhazeBox(rowX, rowY, rowW, rowH, st.rowSelected or {r=28,g=120,b=245,a=245}, 0)
+                if Susano and Susano.DrawRectFilled then
+                    Susano.DrawRectFilled(rowX, rowY + 1, rowW, rowH * 0.45, 1.0, 1.0, 1.0, 0.05, 0)
                 end
-                Susano.DrawRectFilled(rowX + iconRailW, rowY + 5, 1, rowH - 10, 1.0, 1.0, 1.0, isSelected and 0.16 or 0.08, 0)
             else
-                if isSelected then
-                    Menu.DrawRoundedRect(rowX, rowY, rowW, rowH, 189, 19, 29, 250, 8 * scale)
-                else
-                    Menu.DrawRoundedRect(rowX, rowY, rowW, rowH, 10, 14, 24, 245, 8 * scale)
-                end
+                Menu.DrawPhazeBox(rowX, rowY, rowW, rowH, st.row or {r=4,g=8,b=16,a=235}, 0)
             end
-
-            if Susano and Susano.DrawRectFilled then
-                Susano.DrawRectFilled(iconBoxX, iconBoxY, iconBoxSize, iconBoxSize, isSelected and 155/255 or 12/255, isSelected and 15/255 or 16/255, isSelected and 25/255 or 28/255, 0.96, 7 * scale)
-            else
-                Menu.DrawRoundedRect(iconBoxX, iconBoxY, iconBoxSize, iconBoxSize, isSelected and 155 or 12, isSelected and 15 or 16, isSelected and 25 or 28, 245, 7 * scale)
-            end
-
-            Menu.DrawCategorySidebarVisual(category.name, iconBoxX, iconBoxY, iconBoxSize, isSelected)
 
             local label = Menu.StripColorCodes and Menu.StripColorCodes(category.name) or tostring(category.name)
-            local textX = rowX + iconRailW + (14 * scale)
+            local icon = Menu.GetPhazeCategoryIcon(label)
+            local iconX = rowX + (8 * scale)
+            local textX = rowX + (34 * scale)
             local textY = rowY + (rowH / 2) - (9 * scale)
-            Menu.DrawText(textX, textY, label, 16, 1.0, 1.0, 1.0, 1.0)
-            Menu.DrawText(rowX + rowW - (24 * scale), textY, ">>", 16, 1.0, 1.0, 1.0, isSelected and 1.0 or 0.85)
+            local arrowText = "»"
+
+            Menu.DrawText(iconX, textY, icon, 15, 1.0, 1.0, 1.0, 1.0)
+            Menu.DrawText(textX, textY, label, 18, 1.0, 1.0, 1.0, 1.0)
+            local aw = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(arrowText, 18 * scale)) or (8 * scale)
+            Menu.DrawText(rowX + rowW - aw - (8 * scale), textY, arrowText, 18, 1.0, 1.0, 1.0, 1.0)
         end
     end
 
     if totalCategories > 0 then
-        -- right-side scrollbar intentionally disabled for clean category panel
-        -- local scrollbarStartY = startY + mainMenuHeight + mainMenuSpacing
-        -- local visibleHeight = actualVisibleCount * itemHeight
-        -- Menu.DrawScrollbar(x, scrollbarStartY, visibleHeight, Menu.CurrentCategory, totalCategories, true, width)
+        local visibleHeight = actualVisibleCount * itemHeight
+        Menu.DrawScrollbar(x, listStartY, visibleHeight, Menu.CurrentCategory, totalCategories, true, width)
     end
 end
 
-return Menu
+function Menu.DrawFooter()
+    local p = Menu.GetScaledPosition()
+    local scale = Menu.Scale or 1.0
+    local st = Menu.PhazeStyle or {}
+    local totalRows = math.min(Menu.ItemsPerPage, math.max(0, #Menu.Categories - 1))
+    local footerY = p.y + (Menu.Banner.height * scale) + p.mainMenuHeight + (totalRows * p.itemHeight) + p.footerSpacing
+    local footerTextLeft = "Build: 262119"
+    local footerTextRight = string.format("%d / %d", math.max(1, Menu.CurrentCategory - 1), math.max(1, math.max(0, #Menu.Categories - 1)))
+
+    Menu.DrawPhazeBox(p.x, footerY, p.width, p.footerHeight, st.footer or {r=0,g=0,b=0,a=235}, 0)
+    Menu.DrawText(p.x + (10 * scale), footerY + (p.footerHeight / 2) - (8 * scale), "A", 14, 1.0, 1.0, 1.0, 1.0)
+    Menu.DrawText(p.x + (28 * scale), footerY + (p.footerHeight / 2) - (8 * scale), footerTextLeft, 15, 1.0, 1.0, 1.0, 1.0)
+
+    local search = "Q"
+    Menu.DrawText(p.x + p.width - (36 * scale), footerY - (34 * scale), search, 20, 1.0, 1.0, 1.0, 1.0)
+
+    local rw = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(footerTextRight, 15 * scale)) or (#footerTextRight * 7 * scale)
+    Menu.DrawText(p.x + p.width - rw - (10 * scale), footerY + (p.footerHeight / 2) - (8 * scale), footerTextRight, 15, 1.0, 1.0, 1.0, 1.0)
+end
+
