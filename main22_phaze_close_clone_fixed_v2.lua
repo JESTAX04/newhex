@@ -6937,4 +6937,143 @@ function Menu.DrawFooter()
     Menu.DrawText(p.x + p.width - tw2 - 16, footerY + 7, posText, 13, st.dim.r/255, st.dim.g/255, st.dim.b/255, 1.0)
 end
 
+
+
+-- ===== FINAL ONLINE TAB PRUNE OVERRIDE =====
+local _Menu_OriginalEnsureOnlineCategory = Menu.EnsureOnlineCategory
+function Menu.EnsureOnlineCategory(...)
+    local result = nil
+    if _Menu_OriginalEnsureOnlineCategory then
+        result = _Menu_OriginalEnsureOnlineCategory(...)
+    end
+    if Menu.PruneOnlineTabs then
+        Menu.PruneOnlineTabs()
+    end
+    return result
+end
+
+function Menu.PruneOnlineTabs()
+    local function pruneCategory(cat)
+        if not cat or tostring(cat.name or "") ~= "Online" or type(cat.tabs) ~= "table" then
+            return
+        end
+        local keep = {}
+        for _, tab in ipairs(cat.tabs) do
+            local nm = tostring(tab.name or "")
+            if nm ~= "Vehicle" and nm ~= "all" and nm ~= "Player List" then
+                keep[#keep + 1] = tab
+            end
+        end
+        cat.tabs = keep
+        if Menu.CurrentTab > #cat.tabs then
+            Menu.CurrentTab = 1
+        end
+    end
+
+    if type(Menu.TopLevelTabs) == "table" then
+        for _, top in ipairs(Menu.TopLevelTabs) do
+            if top and type(top.categories) == "table" then
+                for _, cat in ipairs(top.categories) do
+                    pruneCategory(cat)
+                end
+            end
+        end
+    end
+
+    if type(Menu.Categories) == "table" then
+        for _, cat in ipairs(Menu.Categories) do
+            pruneCategory(cat)
+        end
+    end
+end
+
+function Menu.DrawTabs(category, x, startY, width, tabHeight)
+    if not category or not category.tabs then return end
+
+    local scale = Menu.Scale or 1.0
+    local st = Menu.NextStyle or {
+        accent = {r=255,g=0,b=0},
+        titleBg = {r=12,g=16,b=28},
+        white = {r=255,g=255,b=255}
+    }
+
+    local tabs = {}
+    if tostring(category.name or "") == "Online" then
+        for _, tab in ipairs(category.tabs) do
+            local nm = tostring(tab.name or "")
+            if nm ~= "Vehicle" and nm ~= "all" and nm ~= "Player List" then
+                tabs[#tabs + 1] = tab
+            end
+        end
+    else
+        tabs = category.tabs
+    end
+
+    local tabCount = #tabs
+    if tabCount < 1 then return end
+
+    local selectedFiltered = 1
+    local selectedTab = category.tabs[Menu.CurrentTab]
+    if selectedTab then
+        for i, tab in ipairs(tabs) do
+            if tab == selectedTab then
+                selectedFiltered = i
+                break
+            end
+        end
+    end
+
+    local outerPad = 8 * scale
+    local gap = 8 * scale
+    local innerX = x + outerPad
+    local innerWidth = width - (outerPad * 2)
+    local containerY = startY + (4 * scale)
+    local containerH = tabHeight - (8 * scale)
+    local totalGap = gap * (tabCount - 1)
+    local tabWidth = (innerWidth - totalGap) / tabCount
+
+    local targetX = innerX + ((selectedFiltered - 1) * (tabWidth + gap))
+    local targetW = tabWidth
+    if not Menu.TabSelectorX or Menu.TabSelectorX == 0 then
+        Menu.TabSelectorX = targetX
+        Menu.TabSelectorWidth = targetW
+    end
+    local smooth = 0.22
+    Menu.TabSelectorX = Menu.TabSelectorX + (targetX - Menu.TabSelectorX) * smooth
+    Menu.TabSelectorWidth = Menu.TabSelectorWidth + (targetW - Menu.TabSelectorWidth) * smooth
+
+    local currentX = innerX
+    for i, tab in ipairs(tabs) do
+        local tabX = currentX
+        local isSelected = (i == selectedFiltered)
+
+        if Susano and Susano.DrawRectFilled then
+            if isSelected then
+                Susano.DrawRectFilled(Menu.TabSelectorX, containerY, Menu.TabSelectorWidth, containerH, 188/255, 19/255, 29/255, 0.98, 8 * scale)
+            else
+                Susano.DrawRectFilled(tabX, containerY, tabWidth, containerH, 12/255, 16/255, 28/255, 0.96, 8 * scale)
+            end
+        else
+            if isSelected then
+                Menu.DrawRoundedRect(Menu.TabSelectorX, containerY, Menu.TabSelectorWidth, containerH, 188, 19, 29, 250, 8 * scale)
+            else
+                Menu.DrawRoundedRect(tabX, containerY, tabWidth, containerH, 12, 16, 28, 245, 8 * scale)
+            end
+        end
+
+        local label = tostring(tab.name or "")
+        local textSize = 12
+        local textWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(label, textSize * scale)) or (#label * 7 * scale)
+        local textX = tabX + (tabWidth / 2) - (textWidth / 2)
+        local textY = containerY + (containerH / 2) - ((textSize * scale) / 2) + (1 * scale)
+        Menu.DrawText(textX, textY, label, textSize, 1.0, 1.0, 1.0, 1.0)
+
+        currentX = currentX + tabWidth + gap
+    end
+end
+
+if Menu.PruneOnlineTabs then
+    Menu.PruneOnlineTabs()
+end
+
 return Menu
