@@ -407,11 +407,37 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
         return
     end
 
-    local numTabs = #category.tabs
+    local tabs = {}
+    if tostring(category.name or "") == "Online" then
+        for _, tab in ipairs(category.tabs) do
+            local nm = tostring(tab.name or "")
+            if nm ~= "Vehicle" and nm ~= "all" then
+                tabs[#tabs + 1] = tab
+            end
+        end
+    else
+        tabs = category.tabs
+    end
+
+    local numTabs = #tabs
     if numTabs < 1 then return end
 
+    local selectedFiltered = Menu.CurrentTab
+    if tostring(category.name or "") == "Online" then
+        local selectedTab = category.tabs[Menu.CurrentTab]
+        selectedFiltered = 1
+        if selectedTab then
+            for i, tab in ipairs(tabs) do
+                if tab == selectedTab then
+                    selectedFiltered = i
+                    break
+                end
+            end
+        end
+    end
+
     local outerPad = 6 * scale
-    local gap = (numTabs >= 5) and (4 * scale) or (8 * scale)
+    local gap = 8 * scale
     local innerX = x + outerPad
     local innerWidth = width - (outerPad * 2)
     local containerY = startY + (4 * scale)
@@ -419,16 +445,8 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
 
     local totalGap = gap * (numTabs - 1)
     local tabWidth = (innerWidth - totalGap) / numTabs
-    local currentX = innerX
-
-    local targetX, targetW = innerX, tabWidth
-    for i = 1, numTabs do
-        if i == Menu.CurrentTab then
-            targetX = innerX + ((i - 1) * (tabWidth + gap))
-            targetW = tabWidth
-            break
-        end
-    end
+    local targetX = innerX + ((selectedFiltered - 1) * (tabWidth + gap))
+    local targetW = tabWidth
 
     if Menu.TabSelectorX == 0 then
         Menu.TabSelectorX = targetX
@@ -441,52 +459,40 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
     if math.abs(Menu.TabSelectorX - targetX) < 0.5 then Menu.TabSelectorX = targetX end
     if math.abs(Menu.TabSelectorWidth - targetW) < 0.5 then Menu.TabSelectorWidth = targetW end
 
-    for i, tab in ipairs(category.tabs) do
+    local function getTabLabel(tabName)
+        if tabName == "Player List" then return "Player" end
+        return tostring(tabName or "")
+    end
+
+    local currentX = innerX
+    for i, tab in ipairs(tabs) do
         local tabX = currentX
-        local currentTabWidth = tabWidth
-        local isSelected = (i == Menu.CurrentTab)
+        local isSelected = (i == selectedFiltered)
 
         if Susano and Susano.DrawRectFilled then
             if isSelected then
                 Susano.DrawRectFilled(Menu.TabSelectorX, containerY, Menu.TabSelectorWidth, containerH, 188/255, 19/255, 29/255, 0.98, 8 * scale)
-                Susano.DrawRectFilled(Menu.TabSelectorX, containerY + 1, Menu.TabSelectorWidth, containerH * 0.30, 1.0, 1.0, 1.0, 0.03, 8 * scale)
-                Susano.DrawRectFilled(Menu.TabSelectorX, containerY + containerH - (2 * scale), Menu.TabSelectorWidth, 2 * scale, 1.0, 0.30, 0.34, 1.0, 0)
             else
-                Susano.DrawRectFilled(tabX, containerY, currentTabWidth, containerH, 12/255, 16/255, 28/255, 0.96, 8 * scale)
+                Susano.DrawRectFilled(tabX, containerY, tabWidth, containerH, 12/255, 16/255, 28/255, 0.96, 8 * scale)
             end
         else
             if isSelected then
                 Menu.DrawRoundedRect(Menu.TabSelectorX, containerY, Menu.TabSelectorWidth, containerH, 188, 19, 29, 250, 8 * scale)
             else
-                Menu.DrawRoundedRect(tabX, containerY, currentTabWidth, containerH, 12, 16, 28, 245, 8 * scale)
+                Menu.DrawRoundedRect(tabX, containerY, tabWidth, containerH, 12, 16, 28, 245, 8 * scale)
             end
         end
 
-        local rawText = Menu.StripColorCodes and Menu.StripColorCodes(tab.name) or tostring(tab.name)
-        local text = rawText
-        if numTabs >= 5 then
-            if rawText == "Player List" then text = "Player" end
-            if rawText == "Players" then text = "Players" end
-            if rawText == "Vehicle" then text = "Vehicle" end
+        local label = getTabLabel(Menu.StripColorCodes and Menu.StripColorCodes(tab.name) or tab.name)
+        local textSize = 12
+        local textWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(label, textSize * scale)) or (string.len(label) * 7 * scale)
+        while textWidth > (tabWidth - (10 * scale)) and #label > 3 do
+            label = string.sub(label, 1, #label - 1)
+            textWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(label, textSize * scale)) or (string.len(label) * 7 * scale)
         end
-
-        local textSize = (numTabs >= 5) and 12 or 14
-        local scaledTextSize = textSize * scale
-        local textWidth = 0
-        if Susano and Susano.GetTextWidth then
-            textWidth = Susano.GetTextWidth(text, scaledTextSize)
-        else
-            textWidth = string.len(text) * 7 * scale
-        end
-
-        while textWidth > (currentTabWidth - (10 * scale)) and #text > 3 do
-            text = string.sub(text, 1, #text - 1)
-            textWidth = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(text, scaledTextSize)) or (string.len(text) * 7 * scale)
-        end
-
-        local textX = tabX + (currentTabWidth / 2) - (textWidth / 2)
-        local textY = containerY + (containerH / 2) - (scaledTextSize / 2) + (1 * scale)
-        Menu.DrawText(textX, textY, text, textSize, 1.0, 1.0, 1.0, 1.0)
+        local textX = tabX + (tabWidth / 2) - (textWidth / 2)
+        local textY = containerY + (containerH / 2) - ((textSize * scale) / 2) + (1 * scale)
+        Menu.DrawText(textX, textY, label, textSize, 1.0, 1.0, 1.0, 1.0)
 
         currentX = currentX + tabWidth + gap
     end
@@ -5550,6 +5556,40 @@ function Menu.RefreshServerCategory()
     end
 end
 
+
+function Menu.PruneOnlineTabs()
+    local function pruneList(list)
+        if type(list) ~= "table" then return end
+        for _, cat in ipairs(list) do
+            if cat and tostring(cat.name or "") == "Online" and type(cat.tabs) == "table" then
+                local keep = {}
+                for _, tab in ipairs(cat.tabs) do
+                    local nm = tostring(tab.name or "")
+                    if nm ~= "Vehicle" and nm ~= "all" then
+                        keep[#keep + 1] = tab
+                    end
+                end
+                cat.tabs = keep
+                if Menu.CurrentTab > #cat.tabs then
+                    Menu.CurrentTab = 1
+                end
+            end
+        end
+    end
+
+    if Menu.TopLevelTabs then
+        for _, top in ipairs(Menu.TopLevelTabs) do
+            if top and type(top.categories) == "table" then
+                pruneList(top.categories)
+            end
+        end
+    end
+
+    if Menu.Categories then
+        pruneList(Menu.Categories)
+    end
+end
+
 function Menu.EnsureOnlineCategory()
     if Menu.TopLevelTabs then
         for _, top in ipairs(Menu.TopLevelTabs) do
@@ -6731,7 +6771,7 @@ function Menu.DrawItem(x, itemY, width, itemHeight, item, isSelected)
     local iconX = rowX + (10 * scale)
     local iconY = itemY + (itemHeight/2) - (iconSize/2)
     local icon = Menu.GetRowIcon(item.name, false, item)
-    -- removed icon
+    -- category/item icon removed
 
     local txt = Menu.StripColorCodes(item.name)
     local textX = rowX + (14 * scale)
@@ -6872,13 +6912,13 @@ function Menu.DrawCategories()
             local iconSize = 0 * scale
             local iconX = rowX + (10 * scale)
             local iconY = yy + (itemHeight/2) - (iconSize/2)
-            -- removed icon
+            -- category icon removed
 
             local txt = Menu.StripColorCodes(category.name)
             local textX = rowX + (14 * scale)
             local textY = yy + itemHeight/2 - (9 * scale)
             Menu.DrawText(textX, textY, txt, 16, 1.0, 1.0, 1.0, 1.0)
-            Menu.DrawText(rowX + rowW - (26 * scale), textY, ">>", 18, st.dim.r/255, st.dim.g/255, st.dim.b/255, 1.0)
+            Menu.DrawText(rowX + rowW - (24 * scale), textY, ">>", 17, st.dim.r/255, st.dim.g/255, st.dim.b/255, 1.0)
         end
     end
 end
