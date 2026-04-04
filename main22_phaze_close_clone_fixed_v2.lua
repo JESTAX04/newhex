@@ -2353,9 +2353,6 @@ function Menu.CloneNPCAttackPlayer(playerData)
 
 function Menu.CloneNPCAttackPlayerFun(playerData)
   if not playerData then return end
-
-function Menu.CloneNPCAttackPlayerRPG(playerData)
-  if not playerData then return end
   if not GetPlayerFromServerId or not GetPlayerPed then return end
 
   local target = GetPlayerFromServerId(playerData.id)
@@ -6271,13 +6268,6 @@ function Menu.RefreshOnlinePlayers()
           type = "action",
           onClick = function()
             Menu.CloneNPCAttackPlayerFun(selectedPlayer)
-          end
-        },
-        {
-          name = "Clone NPC Attack RPG",
-          type = "action",
-          onClick = function()
-            Menu.CloneNPCAttackPlayerRPG(selectedPlayer)
           end
         },
         {
