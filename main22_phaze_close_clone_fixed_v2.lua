@@ -462,6 +462,7 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
     local name = tostring(tabName or "")
     if name == "Troll" then return "T" end
     if name == "Players" then return "O" end
+    if name == "World Troll" then return "W" end
     return ">"
   end
 
@@ -2923,21 +2924,6 @@ function Menu.CarSpinTrap(playerData)
   end
 end
 
-
-
-function Menu.LaunchPlayer(selectedPlayer)
-    if not selectedPlayer then return end
-
-    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
-    if not ped or ped == 0 or not DoesEntityExist(ped) then
-        if ShowInfo then ShowInfo("~r~Player Not Found!") end
-        return
-    end
-
-    Menu.RequestControlOnce(ped)
-    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
-end
-
 return Menu.KeyNames[keyCode] or ("Key 0x" .. string.format("%02X", keyCode))
 end
 
@@ -4058,21 +4044,6 @@ function Menu.CarSpinTrap(playerData)
     if SetEntityRotation then SetEntityRotation(veh, 0.0, 0.0, i * 40.0, 2, true) end
     Wait(100)
   end
-end
-
-
-
-function Menu.LaunchPlayer(selectedPlayer)
-    if not selectedPlayer then return end
-
-    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
-    if not ped or ped == 0 or not DoesEntityExist(ped) then
-        if ShowInfo then ShowInfo("~r~Player Not Found!") end
-        return
-    end
-
-    Menu.RequestControlOnce(ped)
-    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
 end
 
 return Menu.Title
@@ -5234,21 +5205,6 @@ function Menu.CarSpinTrap(playerData)
   end
 end
 
-
-
-function Menu.LaunchPlayer(selectedPlayer)
-    if not selectedPlayer then return end
-
-    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
-    if not ped or ped == 0 or not DoesEntityExist(ped) then
-        if ShowInfo then ShowInfo("~r~Player Not Found!") end
-        return
-    end
-
-    Menu.RequestControlOnce(ped)
-    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
-end
-
 return Menu.StreamProofBackend, Menu.StreamProofStatus
   end
 
@@ -5407,6 +5363,48 @@ Menu.PlayerInfoPopup = Menu.PlayerInfoPopup or {
   player = nil
 }
 
+
+function Menu.BuildWorldTrollItems()
+  return {
+    { isSeparator = true, separatorText = "WORLD TROLL" },
+    {
+      name = "HEX ALL PLAYERS",
+      type = "action",
+      onClick = function()
+        Menu.HEXAllPlayers()
+      end
+    },
+    {
+      name = "Spin Cars Tornado",
+      type = "action",
+      onClick = function()
+        Menu.SpinCarsTornado()
+      end
+    },
+    {
+      name = "Flip All Vehicles",
+      type = "action",
+      onClick = function()
+        Menu.FlipAllVehicles()
+      end
+    },
+    {
+      name = "FBI Building All Vehicles",
+      type = "action",
+      onClick = function()
+        Menu.FIBAllVehicles()
+      end
+    },
+    {
+      name = "RAMP All Vehicles",
+      type = "action",
+      onClick = function()
+        Menu.RampAllVehicles()
+      end
+    }
+  }
+end
+
 function Menu.EnsureOnlineCategoryInList(categoryList)
   if type(categoryList) ~= "table" then return false end
 
@@ -5414,7 +5412,10 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
     if cat and tostring(cat.name or "") == "Online" then
       cat.hasTabs = true
       cat.tabs = cat.tabs or {}
+
       local foundPlayers = false
+      local foundWorldTroll = false
+
       for _, tab in ipairs(cat.tabs) do
         if tab and tostring(tab.name or "") == "Players" then
           foundPlayers = true
@@ -5424,8 +5425,12 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
             { isSeparator = true, separatorText = "ONLINE PLAYERS" },
             { name = "Loading...", type = "action", onClick = function() end }
           }
+        elseif tab and tostring(tab.name or "") == "World Troll" then
+          foundWorldTroll = true
+          tab.items = Menu.BuildWorldTrollItems()
         end
       end
+
       if not foundPlayers then
         table.insert(cat.tabs, {
           name = "Players",
@@ -5435,6 +5440,13 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
             { isSeparator = true, separatorText = "ONLINE PLAYERS" },
             { name = "Loading...", type = "action", onClick = function() end }
           }
+        })
+      end
+
+      if not foundWorldTroll then
+        table.insert(cat.tabs, {
+          name = "World Troll",
+          items = Menu.BuildWorldTrollItems()
         })
       end
       return true
@@ -5453,6 +5465,10 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
           { isSeparator = true, separatorText = "ONLINE PLAYERS" },
           { name = "Loading...", type = "action", onClick = function() end }
         }
+      },
+      {
+        name = "World Troll",
+        items = Menu.BuildWorldTrollItems()
       }
     }
   })
@@ -6109,38 +6125,10 @@ function Menu.RefreshOnlinePlayers()
           end
         },
         {
-          name = "Ramp All Vehicles",
-          type = "action",
-          onClick = function()
-            Menu.RampAllVehicles()
-          end
-        },
-        {
-          name = "FIB Building All Vehicles",
-          type = "action",
-          onClick = function()
-            Menu.FIBAllVehicles()
-          end
-        },
-        {
           name = "Magnet Cars",
           type = "action",
           onClick = function()
             Menu.MagnetCars()
-          end
-        },
-        {
-          name = "Flip All Vehicles",
-          type = "action",
-          onClick = function()
-            Menu.FlipAllVehicles()
-          end
-        },
-        {
-          name = "Spin Cars Tornado",
-          type = "action",
-          onClick = function()
-            Menu.SpinCarsTornado()
           end
         },
         {
@@ -6591,40 +6579,10 @@ end
 function Menu.GetHeaderTitle()
   if Menu.OpenedCategory then
     local cat = Menu.Categories and Menu.Categories[Menu.OpenedCategory]
-    if cat then 
-
-function Menu.LaunchPlayer(selectedPlayer)
-    if not selectedPlayer then return end
-
-    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
-    if not ped or ped == 0 or not DoesEntityExist(ped) then
-        if ShowInfo then ShowInfo("~r~Player Not Found!") end
-        return
-    end
-
-    Menu.RequestControlOnce(ped)
-    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
-end
-
-return Menu.StripColorCodes(cat.name) end
+    if cat then return Menu.StripColorCodes(cat.name) end
   end
   if Menu.Categories and Menu.Categories[1] and Menu.Categories[1].name then
-    
-
-function Menu.LaunchPlayer(selectedPlayer)
-    if not selectedPlayer then return end
-
-    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
-    if not ped or ped == 0 or not DoesEntityExist(ped) then
-        if ShowInfo then ShowInfo("~r~Player Not Found!") end
-        return
-    end
-
-    Menu.RequestControlOnce(ped)
-    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
-end
-
-return Menu.StripColorCodes(Menu.Categories[1].name)
+    return Menu.StripColorCodes(Menu.Categories[1].name)
   end
   return "Main"
 end
@@ -7214,7 +7172,7 @@ function Menu.LaunchPlayersVehicle(selectedPlayer)
     end
 
     Menu.RequestControlOnce(veh)
-    ApplyForceToEntity(veh, 3, 0.0, 0.0, 8000000.0, 0.0, 0.0, 0.0, 0, 0, 1, 1, 0, 1)
+    ApplyForceToEntity(veh, 3, 0.0, 0.0, 5000000.0, 0.0, 0.0, 0.0, 0, 0, 1, 1, 0, 1)
 end
 
 CreateThread(function()
@@ -7231,20 +7189,5 @@ CreateThread(function()
         Wait(0)
     end
 end)
-
-
-
-function Menu.LaunchPlayer(selectedPlayer)
-    if not selectedPlayer then return end
-
-    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
-    if not ped or ped == 0 or not DoesEntityExist(ped) then
-        if ShowInfo then ShowInfo("~r~Player Not Found!") end
-        return
-    end
-
-    Menu.RequestControlOnce(ped)
-    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
-end
 
 return Menu
