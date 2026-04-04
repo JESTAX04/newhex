@@ -2889,7 +2889,7 @@ function Menu.CarSpinTrap(playerData)
 end
 
 
--- ===== ESP ULTRA PACK =====
+-- ===== ESP FULL PACK =====
 Menu.ESP = Menu.ESP or {
     enabled = false,
     snapline = false,
@@ -2897,300 +2897,116 @@ Menu.ESP = Menu.ESP or {
     head = false,
     vehicle = false,
     radar = false,
-    onlyVisible = false,
-    offscreenArrows = false,
-    rotatingRadar = false,
-    maxDistance = 300.0,
-    streamerSafe = false
+    maxDistance = 300.0
 }
 
-function Menu.ESPGetColor(distance)
-    local maxDist = Menu.ESP.maxDistance or 300.0
-    local factor = 1.0 - math.min(1.0, distance / maxDist)
-    local a = 220
-    if Menu.ESP.streamerSafe then
-        return 80, 180, 255, a
-    end
-    return math.floor(255 * factor), math.floor(80 + (100 * factor)), math.floor(80 + (40 * factor)), a
-end
-
-function Menu.IsPedVisibleSafe(ped)
-    if not Menu.ESP.onlyVisible then return true end
-    if HasEntityClearLosToEntity and PlayerPedId then
-        local myPed = PlayerPedId()
-        return HasEntityClearLosToEntity(myPed, ped, 17)
-    end
-    return true
-end
-
-function Menu.DrawOffscreenArrowToPlayer(ped, distance)
-    if not Menu.ESP.offscreenArrows then return end
-    if not GetEntityCoords or not PlayerPedId then return end
-
-    local myCoords = GetEntityCoords(PlayerPedId())
-    local targetCoords = GetEntityCoords(ped)
-
-    local dx = (targetCoords.x or targetCoords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-    local dy = (targetCoords.y or targetCoords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-    local angle = math.atan2(dy, dx)
-
-    local cx, cy = 0.5, 0.5
-    local radius = 0.35
-    local ax = cx + math.cos(angle) * radius
-    local ay = cy + math.sin(angle) * radius
-
-    local r, g, b, a = Menu.ESPGetColor(distance)
-    DrawRect(ax, ay, 0.012, 0.012, r, g, b, a)
-end
-
-function Menu.DrawSkeleton2D(ped, distance)
-    if not Menu.ESP.skeleton then return end
-
+function Menu.DrawSkeleton(ped)
     local bones = {
-        {31086, 24816},
-        {24816, 11816},
-        {11816, 58271},
-        {24816, 45509},
-        {45509, 61163},
-        {24816, 40269},
-        {40269, 28252},
-        {58271, 63931},
-        {63931, 14201},
-        {58271, 36864},
-        {36864, 52301}
+        {31086,24816},{24816,11816},{11816,58271},
+        {24816,45509},{45509,61163},
+        {24816,40269},{40269,28252},
+        {58271,63931},{63931,14201},
+        {58271,36864},{36864,52301}
     }
-
-    local r, g, b, a = Menu.ESPGetColor(distance)
-
-    for _, pair in ipairs(bones) do
-        local b1 = GetPedBoneCoords(ped, pair[1], 0.0, 0.0, 0.0)
-        local b2 = GetPedBoneCoords(ped, pair[2], 0.0, 0.0, 0.0)
-        DrawLine(b1.x, b1.y, b1.z, b2.x, b2.y, b2.z, r, g, b, a)
+    for _,b in ipairs(bones) do
+        local b1 = GetPedBoneCoords(ped,b[1],0.0,0.0,0.0)
+        local b2 = GetPedBoneCoords(ped,b[2],0.0,0.0,0.0)
+        DrawLine(b1.x,b1.y,b1.z,b2.x,b2.y,b2.z,255,0,0,255)
     end
 end
 
-function Menu.DrawPlayerESPUltra()
+function Menu.DrawPlayerESP()
     if not Menu.ESP.enabled then return end
-    if not GetActivePlayers or not PlayerPedId or not GetEntityCoords then return end
-
     local myPed = PlayerPedId()
     local myCoords = GetEntityCoords(myPed)
 
-    for _, player in ipairs(GetActivePlayers()) do
+    for _,player in ipairs(GetActivePlayers()) do
         if player ~= PlayerId() then
             local ped = GetPlayerPed(player)
-            if ped and ped ~= 0 and Menu.IsPedVisibleSafe(ped) then
-                local coords = GetEntityCoords(ped)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-                local dz = (coords.z or coords[3] or 0.0) - (myCoords.z or myCoords[3] or 0.0)
-                local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+            local coords = GetEntityCoords(ped)
+            local dist = #(coords - myCoords)
 
-                if dist <= (Menu.ESP.maxDistance or 300.0) then
-                    local onScreen, sx, sy = World3dToScreen2d(coords.x, coords.y, coords.z + 1.0)
-                    local r, g, b, a = Menu.ESPGetColor(dist)
+            if dist <= Menu.ESP.maxDistance then
+                local onScreen,x,y = World3dToScreen2d(coords.x,coords.y,coords.z+1.0)
+                if onScreen then
+                    local name = GetPlayerName(player)
+                    SetTextScale(0.3,0.3)
+                    SetTextFont(4)
+                    SetTextColour(255,50,50,255)
+                    SetTextCentre(true)
+                    BeginTextCommandDisplayText("STRING")
+                    AddTextComponentSubstringPlayerName(name.." ["..math.floor(dist).."m]")
+                    EndTextCommandDisplayText(x,y)
 
-                    if onScreen then
-                        SetTextScale(0.3, 0.3)
-                        SetTextFont(4)
-                        SetTextColour(r, g, b, 255)
-                        SetTextCentre(true)
-                        BeginTextCommandDisplayText("STRING")
-                        AddTextComponentSubstringPlayerName(GetPlayerName(player) .. " [" .. math.floor(dist) .. "m]")
-                        EndTextCommandDisplayText(sx, sy)
-
-                        if Menu.ESP.snapline then
-                            DrawLine(myCoords.x, myCoords.y, myCoords.z + 0.8, coords.x, coords.y, coords.z + 0.8, r, g, b, a)
-                        end
-
-                        if Menu.ESP.head then
-                            local head = GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.0)
-                            local ok, hx, hy = World3dToScreen2d(head.x, head.y, head.z)
-                            if ok then
-                                DrawRect(hx, hy, 0.008, 0.012, r, g, b, 220)
-                            end
-                        end
-                    else
-                        Menu.DrawOffscreenArrowToPlayer(ped, dist)
+                    if Menu.ESP.snapline then
+                        DrawLine(0.5,1.0,x,y,255,0,0,200)
                     end
+                end
 
-                    Menu.DrawSkeleton2D(ped, dist)
+                if Menu.ESP.head then
+                    local head = GetPedBoneCoords(ped,31086,0.0,0.0,0.0)
+                    local ok,hx,hy = World3dToScreen2d(head.x,head.y,head.z)
+                    if ok then DrawRect(hx,hy,0.01,0.01,255,0,0,255) end
+                end
+
+                if Menu.ESP.skeleton then
+                    Menu.DrawSkeleton(ped)
                 end
             end
         end
     end
 end
 
-function Menu.DrawVehicleESPUltra()
+function Menu.DrawVehicleESP()
     if not Menu.ESP.vehicle then return end
-    if not GetEntityCoords or not PlayerPedId or not DoesEntityExist then return end
-
     local myCoords = GetEntityCoords(PlayerPedId())
 
-    if EnumerateVehicles then
-        for veh in EnumerateVehicles() do
-            if veh and DoesEntityExist(veh) then
-                local coords = GetEntityCoords(veh)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-                local dz = (coords.z or coords[3] or 0.0) - (myCoords.z or myCoords[3] or 0.0)
-                local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
-
-                if dist <= 250.0 then
-                    local onScreen, sx, sy = World3dToScreen2d(coords.x, coords.y, coords.z + 0.8)
-                    if onScreen then
-                        local model = GetEntityModel and GetEntityModel(veh) or 0
-                        local label = "Vehicle"
-                        if GetDisplayNameFromVehicleModel then
-                            local d = GetDisplayNameFromVehicleModel(model)
-                            if d and d ~= "" then label = d end
-                        end
-                        local r, g, b, a = Menu.ESPGetColor(dist)
-                        SetTextScale(0.25, 0.25)
-                        SetTextFont(4)
-                        SetTextColour(0, 255, 120, 255)
-                        SetTextCentre(true)
-                        BeginTextCommandDisplayText("STRING")
-                        AddTextComponentSubstringPlayerName(label .. " [" .. math.floor(dist) .. "m]")
-                        EndTextCommandDisplayText(sx, sy)
-                        DrawRect(sx, sy + 0.015, 0.014, 0.014, 0, 255, 120, a)
-                    end
-                end
+    for veh in EnumerateVehicles() do
+        local coords = GetEntityCoords(veh)
+        local dist = #(coords - myCoords)
+        if dist < 200.0 then
+            local onScreen,x,y = World3dToScreen2d(coords.x,coords.y,coords.z)
+            if onScreen then
+                DrawRect(x,y,0.02,0.02,0,255,0,200)
             end
         end
     end
 end
 
-function Menu.DrawRadarUltra()
+function Menu.DrawRadar()
     if not Menu.ESP.radar then return end
-    if not GetEntityCoords or not PlayerPedId or not GetActivePlayers then return end
+    local baseX,baseY,size = 0.85,0.2,0.12
+    DrawRect(baseX,baseY,size,size,0,0,0,150)
 
-    local baseX = 0.88
-    local baseY = 0.22
-    local size = 0.14
-    local half = size / 2.0
-
-    DrawRect(baseX, baseY, size, size, 0, 0, 0, 150)
-    DrawRect(baseX, baseY, 0.002, size, 255, 255, 255, 70)
-    DrawRect(baseX, baseY, size, 0.002, 255, 255, 255, 70)
-
-    local myPed = PlayerPedId()
-    local myCoords = GetEntityCoords(myPed)
-    local heading = 0.0
-    if GetEntityHeading then
-        heading = math.rad(GetEntityHeading(myPed) or 0.0)
-    end
-
-    local range = 80.0
-    for _, player in ipairs(GetActivePlayers()) do
+    local myCoords = GetEntityCoords(PlayerPedId())
+    for _,player in ipairs(GetActivePlayers()) do
         if player ~= PlayerId() then
             local ped = GetPlayerPed(player)
-            if ped and ped ~= 0 then
-                local coords = GetEntityCoords(ped)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-
-                if Menu.ESP.rotatingRadar then
-                    local cosH = math.cos(-heading)
-                    local sinH = math.sin(-heading)
-                    local rx = (dx * cosH) - (dy * sinH)
-                    local ry = (dx * sinH) + (dy * cosH)
-                    dx, dy = rx, ry
-                end
-
-                dx = math.max(-range, math.min(range, dx))
-                dy = math.max(-range, math.min(range, dy))
-
-                local px = baseX + (dx / range) * half
-                local py = baseY + (dy / range) * half
-                DrawRect(px, py, 0.005, 0.005, 255, 0, 0, 255)
-            end
+            local coords = GetEntityCoords(ped)
+            local dx = coords.x - myCoords.x
+            local dy = coords.y - myCoords.y
+            DrawRect(baseX + dx*0.002, baseY + dy*0.002, 0.005,0.005,255,0,0,255)
         end
-    end
-
-    DrawRect(baseX, baseY, 0.006, 0.006, 255, 255, 255, 255)
-end
-
-local _Menu_OriginalRender_ESP_Ultra = Menu.Render
-function Menu.Render()
-    local result = _Menu_OriginalRender_ESP_Ultra()
-    pcall(function()
-        Menu.DrawPlayerESPUltra()
-        Menu.DrawVehicleESPUltra()
-        Menu.DrawRadarUltra()
-    end)
-    return result
-end
-
-function Menu.EnsureESPUltraCategory()
-    local function add_items(categoryList)
-        if type(categoryList) ~= "table" then return end
-        for _, cat in ipairs(categoryList) do
-            if cat and tostring(cat.name or "") == "Settings" and cat.tabs then
-                for _, tab in ipairs(cat.tabs) do
-                    if tab and tostring(tab.name or "") == "General" then
-                        tab.items = tab.items or {}
-                        local names = {}
-                        for _, item in ipairs(tab.items) do
-                            names[tostring(item.name or "")] = true
-                        end
-
-                        local to_add = {
-                            { name = "ESP Master", type = "toggle", value = Menu.ESP.enabled, onClick = function(v) Menu.ESP.enabled = v == true end },
-                            { name = "Only Visible Players", type = "toggle", value = Menu.ESP.onlyVisible, onClick = function(v) Menu.ESP.onlyVisible = v == true end },
-                            { name = "Off-Screen Arrows", type = "toggle", value = Menu.ESP.offscreenArrows, onClick = function(v) Menu.ESP.offscreenArrows = v == true end },
-                            { name = "Snapline ESP", type = "toggle", value = Menu.ESP.snapline, onClick = function(v) Menu.ESP.snapline = v == true end },
-                            { name = "Skeleton ESP", type = "toggle", value = Menu.ESP.skeleton, onClick = function(v) Menu.ESP.skeleton = v == true end },
-                            { name = "Head Marker", type = "toggle", value = Menu.ESP.head, onClick = function(v) Menu.ESP.head = v == true end },
-                            { name = "Vehicle ESP", type = "toggle", value = Menu.ESP.vehicle, onClick = function(v) Menu.ESP.vehicle = v == true end },
-                            { name = "Radar", type = "toggle", value = Menu.ESP.radar, onClick = function(v) Menu.ESP.radar = v == true end },
-                            { name = "Rotating Radar", type = "toggle", value = Menu.ESP.rotatingRadar, onClick = function(v) Menu.ESP.rotatingRadar = v == true end },
-                            { name = "Streamer Safe ESP", type = "toggle", value = Menu.ESP.streamerSafe, onClick = function(v) Menu.ESP.streamerSafe = v == true end },
-                            {
-                                name = "ESP Distance",
-                                type = "selector",
-                                options = {"100","150","200","300","500"},
-                                selected = 4,
-                                onClick = function(index, option)
-                                    local val = tonumber(option or "300") or 300.0
-                                    Menu.ESP.maxDistance = val
-                                end
-                            }
-                        }
-
-                        for _, item in ipairs(to_add) do
-                            if not names[item.name] then
-                                table.insert(tab.items, item)
-                            end
-                        end
-                        return
-                    end
-                end
-            end
-        end
-    end
-
-    if Menu.TopLevelTabs then
-        for _, top in ipairs(Menu.TopLevelTabs) do
-            if top and top.categories then
-                add_items(top.categories)
-            end
-        end
-    end
-    if Menu.Categories then
-        add_items(Menu.Categories)
     end
 end
 
 CreateThread(function()
     while true do
-        pcall(function()
-            Menu.EnsureESPUltraCategory()
-        end)
-        Wait(1500)
+        Wait(0)
+        Menu.DrawPlayerESP()
+        Menu.DrawVehicleESP()
+        Menu.DrawRadar()
     end
 end)
 
+CreateThread(function()
+    while true do
+        Wait(0)
+        if IsControlJustReleased(0, 168) then
+            Menu.ESP.enabled = not Menu.ESP.enabled
+        end
+    end
+end)
 
 return Menu.KeyNames[keyCode] or ("Key 0x" .. string.format("%02X", keyCode))
 end
@@ -4304,7 +4120,7 @@ function Menu.CarSpinTrap(playerData)
 end
 
 
--- ===== ESP ULTRA PACK =====
+-- ===== ESP FULL PACK =====
 Menu.ESP = Menu.ESP or {
     enabled = false,
     snapline = false,
@@ -4312,300 +4128,116 @@ Menu.ESP = Menu.ESP or {
     head = false,
     vehicle = false,
     radar = false,
-    onlyVisible = false,
-    offscreenArrows = false,
-    rotatingRadar = false,
-    maxDistance = 300.0,
-    streamerSafe = false
+    maxDistance = 300.0
 }
 
-function Menu.ESPGetColor(distance)
-    local maxDist = Menu.ESP.maxDistance or 300.0
-    local factor = 1.0 - math.min(1.0, distance / maxDist)
-    local a = 220
-    if Menu.ESP.streamerSafe then
-        return 80, 180, 255, a
-    end
-    return math.floor(255 * factor), math.floor(80 + (100 * factor)), math.floor(80 + (40 * factor)), a
-end
-
-function Menu.IsPedVisibleSafe(ped)
-    if not Menu.ESP.onlyVisible then return true end
-    if HasEntityClearLosToEntity and PlayerPedId then
-        local myPed = PlayerPedId()
-        return HasEntityClearLosToEntity(myPed, ped, 17)
-    end
-    return true
-end
-
-function Menu.DrawOffscreenArrowToPlayer(ped, distance)
-    if not Menu.ESP.offscreenArrows then return end
-    if not GetEntityCoords or not PlayerPedId then return end
-
-    local myCoords = GetEntityCoords(PlayerPedId())
-    local targetCoords = GetEntityCoords(ped)
-
-    local dx = (targetCoords.x or targetCoords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-    local dy = (targetCoords.y or targetCoords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-    local angle = math.atan2(dy, dx)
-
-    local cx, cy = 0.5, 0.5
-    local radius = 0.35
-    local ax = cx + math.cos(angle) * radius
-    local ay = cy + math.sin(angle) * radius
-
-    local r, g, b, a = Menu.ESPGetColor(distance)
-    DrawRect(ax, ay, 0.012, 0.012, r, g, b, a)
-end
-
-function Menu.DrawSkeleton2D(ped, distance)
-    if not Menu.ESP.skeleton then return end
-
+function Menu.DrawSkeleton(ped)
     local bones = {
-        {31086, 24816},
-        {24816, 11816},
-        {11816, 58271},
-        {24816, 45509},
-        {45509, 61163},
-        {24816, 40269},
-        {40269, 28252},
-        {58271, 63931},
-        {63931, 14201},
-        {58271, 36864},
-        {36864, 52301}
+        {31086,24816},{24816,11816},{11816,58271},
+        {24816,45509},{45509,61163},
+        {24816,40269},{40269,28252},
+        {58271,63931},{63931,14201},
+        {58271,36864},{36864,52301}
     }
-
-    local r, g, b, a = Menu.ESPGetColor(distance)
-
-    for _, pair in ipairs(bones) do
-        local b1 = GetPedBoneCoords(ped, pair[1], 0.0, 0.0, 0.0)
-        local b2 = GetPedBoneCoords(ped, pair[2], 0.0, 0.0, 0.0)
-        DrawLine(b1.x, b1.y, b1.z, b2.x, b2.y, b2.z, r, g, b, a)
+    for _,b in ipairs(bones) do
+        local b1 = GetPedBoneCoords(ped,b[1],0.0,0.0,0.0)
+        local b2 = GetPedBoneCoords(ped,b[2],0.0,0.0,0.0)
+        DrawLine(b1.x,b1.y,b1.z,b2.x,b2.y,b2.z,255,0,0,255)
     end
 end
 
-function Menu.DrawPlayerESPUltra()
+function Menu.DrawPlayerESP()
     if not Menu.ESP.enabled then return end
-    if not GetActivePlayers or not PlayerPedId or not GetEntityCoords then return end
-
     local myPed = PlayerPedId()
     local myCoords = GetEntityCoords(myPed)
 
-    for _, player in ipairs(GetActivePlayers()) do
+    for _,player in ipairs(GetActivePlayers()) do
         if player ~= PlayerId() then
             local ped = GetPlayerPed(player)
-            if ped and ped ~= 0 and Menu.IsPedVisibleSafe(ped) then
-                local coords = GetEntityCoords(ped)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-                local dz = (coords.z or coords[3] or 0.0) - (myCoords.z or myCoords[3] or 0.0)
-                local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+            local coords = GetEntityCoords(ped)
+            local dist = #(coords - myCoords)
 
-                if dist <= (Menu.ESP.maxDistance or 300.0) then
-                    local onScreen, sx, sy = World3dToScreen2d(coords.x, coords.y, coords.z + 1.0)
-                    local r, g, b, a = Menu.ESPGetColor(dist)
+            if dist <= Menu.ESP.maxDistance then
+                local onScreen,x,y = World3dToScreen2d(coords.x,coords.y,coords.z+1.0)
+                if onScreen then
+                    local name = GetPlayerName(player)
+                    SetTextScale(0.3,0.3)
+                    SetTextFont(4)
+                    SetTextColour(255,50,50,255)
+                    SetTextCentre(true)
+                    BeginTextCommandDisplayText("STRING")
+                    AddTextComponentSubstringPlayerName(name.." ["..math.floor(dist).."m]")
+                    EndTextCommandDisplayText(x,y)
 
-                    if onScreen then
-                        SetTextScale(0.3, 0.3)
-                        SetTextFont(4)
-                        SetTextColour(r, g, b, 255)
-                        SetTextCentre(true)
-                        BeginTextCommandDisplayText("STRING")
-                        AddTextComponentSubstringPlayerName(GetPlayerName(player) .. " [" .. math.floor(dist) .. "m]")
-                        EndTextCommandDisplayText(sx, sy)
-
-                        if Menu.ESP.snapline then
-                            DrawLine(myCoords.x, myCoords.y, myCoords.z + 0.8, coords.x, coords.y, coords.z + 0.8, r, g, b, a)
-                        end
-
-                        if Menu.ESP.head then
-                            local head = GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.0)
-                            local ok, hx, hy = World3dToScreen2d(head.x, head.y, head.z)
-                            if ok then
-                                DrawRect(hx, hy, 0.008, 0.012, r, g, b, 220)
-                            end
-                        end
-                    else
-                        Menu.DrawOffscreenArrowToPlayer(ped, dist)
+                    if Menu.ESP.snapline then
+                        DrawLine(0.5,1.0,x,y,255,0,0,200)
                     end
+                end
 
-                    Menu.DrawSkeleton2D(ped, dist)
+                if Menu.ESP.head then
+                    local head = GetPedBoneCoords(ped,31086,0.0,0.0,0.0)
+                    local ok,hx,hy = World3dToScreen2d(head.x,head.y,head.z)
+                    if ok then DrawRect(hx,hy,0.01,0.01,255,0,0,255) end
+                end
+
+                if Menu.ESP.skeleton then
+                    Menu.DrawSkeleton(ped)
                 end
             end
         end
     end
 end
 
-function Menu.DrawVehicleESPUltra()
+function Menu.DrawVehicleESP()
     if not Menu.ESP.vehicle then return end
-    if not GetEntityCoords or not PlayerPedId or not DoesEntityExist then return end
-
     local myCoords = GetEntityCoords(PlayerPedId())
 
-    if EnumerateVehicles then
-        for veh in EnumerateVehicles() do
-            if veh and DoesEntityExist(veh) then
-                local coords = GetEntityCoords(veh)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-                local dz = (coords.z or coords[3] or 0.0) - (myCoords.z or myCoords[3] or 0.0)
-                local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
-
-                if dist <= 250.0 then
-                    local onScreen, sx, sy = World3dToScreen2d(coords.x, coords.y, coords.z + 0.8)
-                    if onScreen then
-                        local model = GetEntityModel and GetEntityModel(veh) or 0
-                        local label = "Vehicle"
-                        if GetDisplayNameFromVehicleModel then
-                            local d = GetDisplayNameFromVehicleModel(model)
-                            if d and d ~= "" then label = d end
-                        end
-                        local r, g, b, a = Menu.ESPGetColor(dist)
-                        SetTextScale(0.25, 0.25)
-                        SetTextFont(4)
-                        SetTextColour(0, 255, 120, 255)
-                        SetTextCentre(true)
-                        BeginTextCommandDisplayText("STRING")
-                        AddTextComponentSubstringPlayerName(label .. " [" .. math.floor(dist) .. "m]")
-                        EndTextCommandDisplayText(sx, sy)
-                        DrawRect(sx, sy + 0.015, 0.014, 0.014, 0, 255, 120, a)
-                    end
-                end
+    for veh in EnumerateVehicles() do
+        local coords = GetEntityCoords(veh)
+        local dist = #(coords - myCoords)
+        if dist < 200.0 then
+            local onScreen,x,y = World3dToScreen2d(coords.x,coords.y,coords.z)
+            if onScreen then
+                DrawRect(x,y,0.02,0.02,0,255,0,200)
             end
         end
     end
 end
 
-function Menu.DrawRadarUltra()
+function Menu.DrawRadar()
     if not Menu.ESP.radar then return end
-    if not GetEntityCoords or not PlayerPedId or not GetActivePlayers then return end
+    local baseX,baseY,size = 0.85,0.2,0.12
+    DrawRect(baseX,baseY,size,size,0,0,0,150)
 
-    local baseX = 0.88
-    local baseY = 0.22
-    local size = 0.14
-    local half = size / 2.0
-
-    DrawRect(baseX, baseY, size, size, 0, 0, 0, 150)
-    DrawRect(baseX, baseY, 0.002, size, 255, 255, 255, 70)
-    DrawRect(baseX, baseY, size, 0.002, 255, 255, 255, 70)
-
-    local myPed = PlayerPedId()
-    local myCoords = GetEntityCoords(myPed)
-    local heading = 0.0
-    if GetEntityHeading then
-        heading = math.rad(GetEntityHeading(myPed) or 0.0)
-    end
-
-    local range = 80.0
-    for _, player in ipairs(GetActivePlayers()) do
+    local myCoords = GetEntityCoords(PlayerPedId())
+    for _,player in ipairs(GetActivePlayers()) do
         if player ~= PlayerId() then
             local ped = GetPlayerPed(player)
-            if ped and ped ~= 0 then
-                local coords = GetEntityCoords(ped)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-
-                if Menu.ESP.rotatingRadar then
-                    local cosH = math.cos(-heading)
-                    local sinH = math.sin(-heading)
-                    local rx = (dx * cosH) - (dy * sinH)
-                    local ry = (dx * sinH) + (dy * cosH)
-                    dx, dy = rx, ry
-                end
-
-                dx = math.max(-range, math.min(range, dx))
-                dy = math.max(-range, math.min(range, dy))
-
-                local px = baseX + (dx / range) * half
-                local py = baseY + (dy / range) * half
-                DrawRect(px, py, 0.005, 0.005, 255, 0, 0, 255)
-            end
+            local coords = GetEntityCoords(ped)
+            local dx = coords.x - myCoords.x
+            local dy = coords.y - myCoords.y
+            DrawRect(baseX + dx*0.002, baseY + dy*0.002, 0.005,0.005,255,0,0,255)
         end
-    end
-
-    DrawRect(baseX, baseY, 0.006, 0.006, 255, 255, 255, 255)
-end
-
-local _Menu_OriginalRender_ESP_Ultra = Menu.Render
-function Menu.Render()
-    local result = _Menu_OriginalRender_ESP_Ultra()
-    pcall(function()
-        Menu.DrawPlayerESPUltra()
-        Menu.DrawVehicleESPUltra()
-        Menu.DrawRadarUltra()
-    end)
-    return result
-end
-
-function Menu.EnsureESPUltraCategory()
-    local function add_items(categoryList)
-        if type(categoryList) ~= "table" then return end
-        for _, cat in ipairs(categoryList) do
-            if cat and tostring(cat.name or "") == "Settings" and cat.tabs then
-                for _, tab in ipairs(cat.tabs) do
-                    if tab and tostring(tab.name or "") == "General" then
-                        tab.items = tab.items or {}
-                        local names = {}
-                        for _, item in ipairs(tab.items) do
-                            names[tostring(item.name or "")] = true
-                        end
-
-                        local to_add = {
-                            { name = "ESP Master", type = "toggle", value = Menu.ESP.enabled, onClick = function(v) Menu.ESP.enabled = v == true end },
-                            { name = "Only Visible Players", type = "toggle", value = Menu.ESP.onlyVisible, onClick = function(v) Menu.ESP.onlyVisible = v == true end },
-                            { name = "Off-Screen Arrows", type = "toggle", value = Menu.ESP.offscreenArrows, onClick = function(v) Menu.ESP.offscreenArrows = v == true end },
-                            { name = "Snapline ESP", type = "toggle", value = Menu.ESP.snapline, onClick = function(v) Menu.ESP.snapline = v == true end },
-                            { name = "Skeleton ESP", type = "toggle", value = Menu.ESP.skeleton, onClick = function(v) Menu.ESP.skeleton = v == true end },
-                            { name = "Head Marker", type = "toggle", value = Menu.ESP.head, onClick = function(v) Menu.ESP.head = v == true end },
-                            { name = "Vehicle ESP", type = "toggle", value = Menu.ESP.vehicle, onClick = function(v) Menu.ESP.vehicle = v == true end },
-                            { name = "Radar", type = "toggle", value = Menu.ESP.radar, onClick = function(v) Menu.ESP.radar = v == true end },
-                            { name = "Rotating Radar", type = "toggle", value = Menu.ESP.rotatingRadar, onClick = function(v) Menu.ESP.rotatingRadar = v == true end },
-                            { name = "Streamer Safe ESP", type = "toggle", value = Menu.ESP.streamerSafe, onClick = function(v) Menu.ESP.streamerSafe = v == true end },
-                            {
-                                name = "ESP Distance",
-                                type = "selector",
-                                options = {"100","150","200","300","500"},
-                                selected = 4,
-                                onClick = function(index, option)
-                                    local val = tonumber(option or "300") or 300.0
-                                    Menu.ESP.maxDistance = val
-                                end
-                            }
-                        }
-
-                        for _, item in ipairs(to_add) do
-                            if not names[item.name] then
-                                table.insert(tab.items, item)
-                            end
-                        end
-                        return
-                    end
-                end
-            end
-        end
-    end
-
-    if Menu.TopLevelTabs then
-        for _, top in ipairs(Menu.TopLevelTabs) do
-            if top and top.categories then
-                add_items(top.categories)
-            end
-        end
-    end
-    if Menu.Categories then
-        add_items(Menu.Categories)
     end
 end
 
 CreateThread(function()
     while true do
-        pcall(function()
-            Menu.EnsureESPUltraCategory()
-        end)
-        Wait(1500)
+        Wait(0)
+        Menu.DrawPlayerESP()
+        Menu.DrawVehicleESP()
+        Menu.DrawRadar()
     end
 end)
 
+CreateThread(function()
+    while true do
+        Wait(0)
+        if IsControlJustReleased(0, 168) then
+            Menu.ESP.enabled = not Menu.ESP.enabled
+        end
+    end
+end)
 
 return Menu.Title
     end
@@ -5767,7 +5399,7 @@ function Menu.CarSpinTrap(playerData)
 end
 
 
--- ===== ESP ULTRA PACK =====
+-- ===== ESP FULL PACK =====
 Menu.ESP = Menu.ESP or {
     enabled = false,
     snapline = false,
@@ -5775,300 +5407,116 @@ Menu.ESP = Menu.ESP or {
     head = false,
     vehicle = false,
     radar = false,
-    onlyVisible = false,
-    offscreenArrows = false,
-    rotatingRadar = false,
-    maxDistance = 300.0,
-    streamerSafe = false
+    maxDistance = 300.0
 }
 
-function Menu.ESPGetColor(distance)
-    local maxDist = Menu.ESP.maxDistance or 300.0
-    local factor = 1.0 - math.min(1.0, distance / maxDist)
-    local a = 220
-    if Menu.ESP.streamerSafe then
-        return 80, 180, 255, a
-    end
-    return math.floor(255 * factor), math.floor(80 + (100 * factor)), math.floor(80 + (40 * factor)), a
-end
-
-function Menu.IsPedVisibleSafe(ped)
-    if not Menu.ESP.onlyVisible then return true end
-    if HasEntityClearLosToEntity and PlayerPedId then
-        local myPed = PlayerPedId()
-        return HasEntityClearLosToEntity(myPed, ped, 17)
-    end
-    return true
-end
-
-function Menu.DrawOffscreenArrowToPlayer(ped, distance)
-    if not Menu.ESP.offscreenArrows then return end
-    if not GetEntityCoords or not PlayerPedId then return end
-
-    local myCoords = GetEntityCoords(PlayerPedId())
-    local targetCoords = GetEntityCoords(ped)
-
-    local dx = (targetCoords.x or targetCoords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-    local dy = (targetCoords.y or targetCoords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-    local angle = math.atan2(dy, dx)
-
-    local cx, cy = 0.5, 0.5
-    local radius = 0.35
-    local ax = cx + math.cos(angle) * radius
-    local ay = cy + math.sin(angle) * radius
-
-    local r, g, b, a = Menu.ESPGetColor(distance)
-    DrawRect(ax, ay, 0.012, 0.012, r, g, b, a)
-end
-
-function Menu.DrawSkeleton2D(ped, distance)
-    if not Menu.ESP.skeleton then return end
-
+function Menu.DrawSkeleton(ped)
     local bones = {
-        {31086, 24816},
-        {24816, 11816},
-        {11816, 58271},
-        {24816, 45509},
-        {45509, 61163},
-        {24816, 40269},
-        {40269, 28252},
-        {58271, 63931},
-        {63931, 14201},
-        {58271, 36864},
-        {36864, 52301}
+        {31086,24816},{24816,11816},{11816,58271},
+        {24816,45509},{45509,61163},
+        {24816,40269},{40269,28252},
+        {58271,63931},{63931,14201},
+        {58271,36864},{36864,52301}
     }
-
-    local r, g, b, a = Menu.ESPGetColor(distance)
-
-    for _, pair in ipairs(bones) do
-        local b1 = GetPedBoneCoords(ped, pair[1], 0.0, 0.0, 0.0)
-        local b2 = GetPedBoneCoords(ped, pair[2], 0.0, 0.0, 0.0)
-        DrawLine(b1.x, b1.y, b1.z, b2.x, b2.y, b2.z, r, g, b, a)
+    for _,b in ipairs(bones) do
+        local b1 = GetPedBoneCoords(ped,b[1],0.0,0.0,0.0)
+        local b2 = GetPedBoneCoords(ped,b[2],0.0,0.0,0.0)
+        DrawLine(b1.x,b1.y,b1.z,b2.x,b2.y,b2.z,255,0,0,255)
     end
 end
 
-function Menu.DrawPlayerESPUltra()
+function Menu.DrawPlayerESP()
     if not Menu.ESP.enabled then return end
-    if not GetActivePlayers or not PlayerPedId or not GetEntityCoords then return end
-
     local myPed = PlayerPedId()
     local myCoords = GetEntityCoords(myPed)
 
-    for _, player in ipairs(GetActivePlayers()) do
+    for _,player in ipairs(GetActivePlayers()) do
         if player ~= PlayerId() then
             local ped = GetPlayerPed(player)
-            if ped and ped ~= 0 and Menu.IsPedVisibleSafe(ped) then
-                local coords = GetEntityCoords(ped)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-                local dz = (coords.z or coords[3] or 0.0) - (myCoords.z or myCoords[3] or 0.0)
-                local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+            local coords = GetEntityCoords(ped)
+            local dist = #(coords - myCoords)
 
-                if dist <= (Menu.ESP.maxDistance or 300.0) then
-                    local onScreen, sx, sy = World3dToScreen2d(coords.x, coords.y, coords.z + 1.0)
-                    local r, g, b, a = Menu.ESPGetColor(dist)
+            if dist <= Menu.ESP.maxDistance then
+                local onScreen,x,y = World3dToScreen2d(coords.x,coords.y,coords.z+1.0)
+                if onScreen then
+                    local name = GetPlayerName(player)
+                    SetTextScale(0.3,0.3)
+                    SetTextFont(4)
+                    SetTextColour(255,50,50,255)
+                    SetTextCentre(true)
+                    BeginTextCommandDisplayText("STRING")
+                    AddTextComponentSubstringPlayerName(name.." ["..math.floor(dist).."m]")
+                    EndTextCommandDisplayText(x,y)
 
-                    if onScreen then
-                        SetTextScale(0.3, 0.3)
-                        SetTextFont(4)
-                        SetTextColour(r, g, b, 255)
-                        SetTextCentre(true)
-                        BeginTextCommandDisplayText("STRING")
-                        AddTextComponentSubstringPlayerName(GetPlayerName(player) .. " [" .. math.floor(dist) .. "m]")
-                        EndTextCommandDisplayText(sx, sy)
-
-                        if Menu.ESP.snapline then
-                            DrawLine(myCoords.x, myCoords.y, myCoords.z + 0.8, coords.x, coords.y, coords.z + 0.8, r, g, b, a)
-                        end
-
-                        if Menu.ESP.head then
-                            local head = GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.0)
-                            local ok, hx, hy = World3dToScreen2d(head.x, head.y, head.z)
-                            if ok then
-                                DrawRect(hx, hy, 0.008, 0.012, r, g, b, 220)
-                            end
-                        end
-                    else
-                        Menu.DrawOffscreenArrowToPlayer(ped, dist)
+                    if Menu.ESP.snapline then
+                        DrawLine(0.5,1.0,x,y,255,0,0,200)
                     end
+                end
 
-                    Menu.DrawSkeleton2D(ped, dist)
+                if Menu.ESP.head then
+                    local head = GetPedBoneCoords(ped,31086,0.0,0.0,0.0)
+                    local ok,hx,hy = World3dToScreen2d(head.x,head.y,head.z)
+                    if ok then DrawRect(hx,hy,0.01,0.01,255,0,0,255) end
+                end
+
+                if Menu.ESP.skeleton then
+                    Menu.DrawSkeleton(ped)
                 end
             end
         end
     end
 end
 
-function Menu.DrawVehicleESPUltra()
+function Menu.DrawVehicleESP()
     if not Menu.ESP.vehicle then return end
-    if not GetEntityCoords or not PlayerPedId or not DoesEntityExist then return end
-
     local myCoords = GetEntityCoords(PlayerPedId())
 
-    if EnumerateVehicles then
-        for veh in EnumerateVehicles() do
-            if veh and DoesEntityExist(veh) then
-                local coords = GetEntityCoords(veh)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-                local dz = (coords.z or coords[3] or 0.0) - (myCoords.z or myCoords[3] or 0.0)
-                local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
-
-                if dist <= 250.0 then
-                    local onScreen, sx, sy = World3dToScreen2d(coords.x, coords.y, coords.z + 0.8)
-                    if onScreen then
-                        local model = GetEntityModel and GetEntityModel(veh) or 0
-                        local label = "Vehicle"
-                        if GetDisplayNameFromVehicleModel then
-                            local d = GetDisplayNameFromVehicleModel(model)
-                            if d and d ~= "" then label = d end
-                        end
-                        local r, g, b, a = Menu.ESPGetColor(dist)
-                        SetTextScale(0.25, 0.25)
-                        SetTextFont(4)
-                        SetTextColour(0, 255, 120, 255)
-                        SetTextCentre(true)
-                        BeginTextCommandDisplayText("STRING")
-                        AddTextComponentSubstringPlayerName(label .. " [" .. math.floor(dist) .. "m]")
-                        EndTextCommandDisplayText(sx, sy)
-                        DrawRect(sx, sy + 0.015, 0.014, 0.014, 0, 255, 120, a)
-                    end
-                end
+    for veh in EnumerateVehicles() do
+        local coords = GetEntityCoords(veh)
+        local dist = #(coords - myCoords)
+        if dist < 200.0 then
+            local onScreen,x,y = World3dToScreen2d(coords.x,coords.y,coords.z)
+            if onScreen then
+                DrawRect(x,y,0.02,0.02,0,255,0,200)
             end
         end
     end
 end
 
-function Menu.DrawRadarUltra()
+function Menu.DrawRadar()
     if not Menu.ESP.radar then return end
-    if not GetEntityCoords or not PlayerPedId or not GetActivePlayers then return end
+    local baseX,baseY,size = 0.85,0.2,0.12
+    DrawRect(baseX,baseY,size,size,0,0,0,150)
 
-    local baseX = 0.88
-    local baseY = 0.22
-    local size = 0.14
-    local half = size / 2.0
-
-    DrawRect(baseX, baseY, size, size, 0, 0, 0, 150)
-    DrawRect(baseX, baseY, 0.002, size, 255, 255, 255, 70)
-    DrawRect(baseX, baseY, size, 0.002, 255, 255, 255, 70)
-
-    local myPed = PlayerPedId()
-    local myCoords = GetEntityCoords(myPed)
-    local heading = 0.0
-    if GetEntityHeading then
-        heading = math.rad(GetEntityHeading(myPed) or 0.0)
-    end
-
-    local range = 80.0
-    for _, player in ipairs(GetActivePlayers()) do
+    local myCoords = GetEntityCoords(PlayerPedId())
+    for _,player in ipairs(GetActivePlayers()) do
         if player ~= PlayerId() then
             local ped = GetPlayerPed(player)
-            if ped and ped ~= 0 then
-                local coords = GetEntityCoords(ped)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-
-                if Menu.ESP.rotatingRadar then
-                    local cosH = math.cos(-heading)
-                    local sinH = math.sin(-heading)
-                    local rx = (dx * cosH) - (dy * sinH)
-                    local ry = (dx * sinH) + (dy * cosH)
-                    dx, dy = rx, ry
-                end
-
-                dx = math.max(-range, math.min(range, dx))
-                dy = math.max(-range, math.min(range, dy))
-
-                local px = baseX + (dx / range) * half
-                local py = baseY + (dy / range) * half
-                DrawRect(px, py, 0.005, 0.005, 255, 0, 0, 255)
-            end
+            local coords = GetEntityCoords(ped)
+            local dx = coords.x - myCoords.x
+            local dy = coords.y - myCoords.y
+            DrawRect(baseX + dx*0.002, baseY + dy*0.002, 0.005,0.005,255,0,0,255)
         end
-    end
-
-    DrawRect(baseX, baseY, 0.006, 0.006, 255, 255, 255, 255)
-end
-
-local _Menu_OriginalRender_ESP_Ultra = Menu.Render
-function Menu.Render()
-    local result = _Menu_OriginalRender_ESP_Ultra()
-    pcall(function()
-        Menu.DrawPlayerESPUltra()
-        Menu.DrawVehicleESPUltra()
-        Menu.DrawRadarUltra()
-    end)
-    return result
-end
-
-function Menu.EnsureESPUltraCategory()
-    local function add_items(categoryList)
-        if type(categoryList) ~= "table" then return end
-        for _, cat in ipairs(categoryList) do
-            if cat and tostring(cat.name or "") == "Settings" and cat.tabs then
-                for _, tab in ipairs(cat.tabs) do
-                    if tab and tostring(tab.name or "") == "General" then
-                        tab.items = tab.items or {}
-                        local names = {}
-                        for _, item in ipairs(tab.items) do
-                            names[tostring(item.name or "")] = true
-                        end
-
-                        local to_add = {
-                            { name = "ESP Master", type = "toggle", value = Menu.ESP.enabled, onClick = function(v) Menu.ESP.enabled = v == true end },
-                            { name = "Only Visible Players", type = "toggle", value = Menu.ESP.onlyVisible, onClick = function(v) Menu.ESP.onlyVisible = v == true end },
-                            { name = "Off-Screen Arrows", type = "toggle", value = Menu.ESP.offscreenArrows, onClick = function(v) Menu.ESP.offscreenArrows = v == true end },
-                            { name = "Snapline ESP", type = "toggle", value = Menu.ESP.snapline, onClick = function(v) Menu.ESP.snapline = v == true end },
-                            { name = "Skeleton ESP", type = "toggle", value = Menu.ESP.skeleton, onClick = function(v) Menu.ESP.skeleton = v == true end },
-                            { name = "Head Marker", type = "toggle", value = Menu.ESP.head, onClick = function(v) Menu.ESP.head = v == true end },
-                            { name = "Vehicle ESP", type = "toggle", value = Menu.ESP.vehicle, onClick = function(v) Menu.ESP.vehicle = v == true end },
-                            { name = "Radar", type = "toggle", value = Menu.ESP.radar, onClick = function(v) Menu.ESP.radar = v == true end },
-                            { name = "Rotating Radar", type = "toggle", value = Menu.ESP.rotatingRadar, onClick = function(v) Menu.ESP.rotatingRadar = v == true end },
-                            { name = "Streamer Safe ESP", type = "toggle", value = Menu.ESP.streamerSafe, onClick = function(v) Menu.ESP.streamerSafe = v == true end },
-                            {
-                                name = "ESP Distance",
-                                type = "selector",
-                                options = {"100","150","200","300","500"},
-                                selected = 4,
-                                onClick = function(index, option)
-                                    local val = tonumber(option or "300") or 300.0
-                                    Menu.ESP.maxDistance = val
-                                end
-                            }
-                        }
-
-                        for _, item in ipairs(to_add) do
-                            if not names[item.name] then
-                                table.insert(tab.items, item)
-                            end
-                        end
-                        return
-                    end
-                end
-            end
-        end
-    end
-
-    if Menu.TopLevelTabs then
-        for _, top in ipairs(Menu.TopLevelTabs) do
-            if top and top.categories then
-                add_items(top.categories)
-            end
-        end
-    end
-    if Menu.Categories then
-        add_items(Menu.Categories)
     end
 end
 
 CreateThread(function()
     while true do
-        pcall(function()
-            Menu.EnsureESPUltraCategory()
-        end)
-        Wait(1500)
+        Wait(0)
+        Menu.DrawPlayerESP()
+        Menu.DrawVehicleESP()
+        Menu.DrawRadar()
     end
 end)
 
+CreateThread(function()
+    while true do
+        Wait(0)
+        if IsControlJustReleased(0, 168) then
+            Menu.ESP.enabled = not Menu.ESP.enabled
+        end
+    end
+end)
 
 return Menu.StreamProofBackend, Menu.StreamProofStatus
     end
@@ -7121,7 +6569,7 @@ function Menu.CarSpinTrap(playerData)
 end
 
 
--- ===== ESP ULTRA PACK =====
+-- ===== ESP FULL PACK =====
 Menu.ESP = Menu.ESP or {
     enabled = false,
     snapline = false,
@@ -7129,299 +6577,115 @@ Menu.ESP = Menu.ESP or {
     head = false,
     vehicle = false,
     radar = false,
-    onlyVisible = false,
-    offscreenArrows = false,
-    rotatingRadar = false,
-    maxDistance = 300.0,
-    streamerSafe = false
+    maxDistance = 300.0
 }
 
-function Menu.ESPGetColor(distance)
-    local maxDist = Menu.ESP.maxDistance or 300.0
-    local factor = 1.0 - math.min(1.0, distance / maxDist)
-    local a = 220
-    if Menu.ESP.streamerSafe then
-        return 80, 180, 255, a
-    end
-    return math.floor(255 * factor), math.floor(80 + (100 * factor)), math.floor(80 + (40 * factor)), a
-end
-
-function Menu.IsPedVisibleSafe(ped)
-    if not Menu.ESP.onlyVisible then return true end
-    if HasEntityClearLosToEntity and PlayerPedId then
-        local myPed = PlayerPedId()
-        return HasEntityClearLosToEntity(myPed, ped, 17)
-    end
-    return true
-end
-
-function Menu.DrawOffscreenArrowToPlayer(ped, distance)
-    if not Menu.ESP.offscreenArrows then return end
-    if not GetEntityCoords or not PlayerPedId then return end
-
-    local myCoords = GetEntityCoords(PlayerPedId())
-    local targetCoords = GetEntityCoords(ped)
-
-    local dx = (targetCoords.x or targetCoords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-    local dy = (targetCoords.y or targetCoords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-    local angle = math.atan2(dy, dx)
-
-    local cx, cy = 0.5, 0.5
-    local radius = 0.35
-    local ax = cx + math.cos(angle) * radius
-    local ay = cy + math.sin(angle) * radius
-
-    local r, g, b, a = Menu.ESPGetColor(distance)
-    DrawRect(ax, ay, 0.012, 0.012, r, g, b, a)
-end
-
-function Menu.DrawSkeleton2D(ped, distance)
-    if not Menu.ESP.skeleton then return end
-
+function Menu.DrawSkeleton(ped)
     local bones = {
-        {31086, 24816},
-        {24816, 11816},
-        {11816, 58271},
-        {24816, 45509},
-        {45509, 61163},
-        {24816, 40269},
-        {40269, 28252},
-        {58271, 63931},
-        {63931, 14201},
-        {58271, 36864},
-        {36864, 52301}
+        {31086,24816},{24816,11816},{11816,58271},
+        {24816,45509},{45509,61163},
+        {24816,40269},{40269,28252},
+        {58271,63931},{63931,14201},
+        {58271,36864},{36864,52301}
     }
-
-    local r, g, b, a = Menu.ESPGetColor(distance)
-
-    for _, pair in ipairs(bones) do
-        local b1 = GetPedBoneCoords(ped, pair[1], 0.0, 0.0, 0.0)
-        local b2 = GetPedBoneCoords(ped, pair[2], 0.0, 0.0, 0.0)
-        DrawLine(b1.x, b1.y, b1.z, b2.x, b2.y, b2.z, r, g, b, a)
+    for _,b in ipairs(bones) do
+        local b1 = GetPedBoneCoords(ped,b[1],0.0,0.0,0.0)
+        local b2 = GetPedBoneCoords(ped,b[2],0.0,0.0,0.0)
+        DrawLine(b1.x,b1.y,b1.z,b2.x,b2.y,b2.z,255,0,0,255)
     end
 end
 
-function Menu.DrawPlayerESPUltra()
+function Menu.DrawPlayerESP()
     if not Menu.ESP.enabled then return end
-    if not GetActivePlayers or not PlayerPedId or not GetEntityCoords then return end
-
     local myPed = PlayerPedId()
     local myCoords = GetEntityCoords(myPed)
 
-    for _, player in ipairs(GetActivePlayers()) do
+    for _,player in ipairs(GetActivePlayers()) do
         if player ~= PlayerId() then
             local ped = GetPlayerPed(player)
-            if ped and ped ~= 0 and Menu.IsPedVisibleSafe(ped) then
-                local coords = GetEntityCoords(ped)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-                local dz = (coords.z or coords[3] or 0.0) - (myCoords.z or myCoords[3] or 0.0)
-                local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+            local coords = GetEntityCoords(ped)
+            local dist = #(coords - myCoords)
 
-                if dist <= (Menu.ESP.maxDistance or 300.0) then
-                    local onScreen, sx, sy = World3dToScreen2d(coords.x, coords.y, coords.z + 1.0)
-                    local r, g, b, a = Menu.ESPGetColor(dist)
+            if dist <= Menu.ESP.maxDistance then
+                local onScreen,x,y = World3dToScreen2d(coords.x,coords.y,coords.z+1.0)
+                if onScreen then
+                    local name = GetPlayerName(player)
+                    SetTextScale(0.3,0.3)
+                    SetTextFont(4)
+                    SetTextColour(255,50,50,255)
+                    SetTextCentre(true)
+                    BeginTextCommandDisplayText("STRING")
+                    AddTextComponentSubstringPlayerName(name.." ["..math.floor(dist).."m]")
+                    EndTextCommandDisplayText(x,y)
 
-                    if onScreen then
-                        SetTextScale(0.3, 0.3)
-                        SetTextFont(4)
-                        SetTextColour(r, g, b, 255)
-                        SetTextCentre(true)
-                        BeginTextCommandDisplayText("STRING")
-                        AddTextComponentSubstringPlayerName(GetPlayerName(player) .. " [" .. math.floor(dist) .. "m]")
-                        EndTextCommandDisplayText(sx, sy)
-
-                        if Menu.ESP.snapline then
-                            DrawLine(myCoords.x, myCoords.y, myCoords.z + 0.8, coords.x, coords.y, coords.z + 0.8, r, g, b, a)
-                        end
-
-                        if Menu.ESP.head then
-                            local head = GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.0)
-                            local ok, hx, hy = World3dToScreen2d(head.x, head.y, head.z)
-                            if ok then
-                                DrawRect(hx, hy, 0.008, 0.012, r, g, b, 220)
-                            end
-                        end
-                    else
-                        Menu.DrawOffscreenArrowToPlayer(ped, dist)
+                    if Menu.ESP.snapline then
+                        DrawLine(0.5,1.0,x,y,255,0,0,200)
                     end
+                end
 
-                    Menu.DrawSkeleton2D(ped, dist)
+                if Menu.ESP.head then
+                    local head = GetPedBoneCoords(ped,31086,0.0,0.0,0.0)
+                    local ok,hx,hy = World3dToScreen2d(head.x,head.y,head.z)
+                    if ok then DrawRect(hx,hy,0.01,0.01,255,0,0,255) end
+                end
+
+                if Menu.ESP.skeleton then
+                    Menu.DrawSkeleton(ped)
                 end
             end
         end
     end
 end
 
-function Menu.DrawVehicleESPUltra()
+function Menu.DrawVehicleESP()
     if not Menu.ESP.vehicle then return end
-    if not GetEntityCoords or not PlayerPedId or not DoesEntityExist then return end
-
     local myCoords = GetEntityCoords(PlayerPedId())
 
-    if EnumerateVehicles then
-        for veh in EnumerateVehicles() do
-            if veh and DoesEntityExist(veh) then
-                local coords = GetEntityCoords(veh)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-                local dz = (coords.z or coords[3] or 0.0) - (myCoords.z or myCoords[3] or 0.0)
-                local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
-
-                if dist <= 250.0 then
-                    local onScreen, sx, sy = World3dToScreen2d(coords.x, coords.y, coords.z + 0.8)
-                    if onScreen then
-                        local model = GetEntityModel and GetEntityModel(veh) or 0
-                        local label = "Vehicle"
-                        if GetDisplayNameFromVehicleModel then
-                            local d = GetDisplayNameFromVehicleModel(model)
-                            if d and d ~= "" then label = d end
-                        end
-                        local r, g, b, a = Menu.ESPGetColor(dist)
-                        SetTextScale(0.25, 0.25)
-                        SetTextFont(4)
-                        SetTextColour(0, 255, 120, 255)
-                        SetTextCentre(true)
-                        BeginTextCommandDisplayText("STRING")
-                        AddTextComponentSubstringPlayerName(label .. " [" .. math.floor(dist) .. "m]")
-                        EndTextCommandDisplayText(sx, sy)
-                        DrawRect(sx, sy + 0.015, 0.014, 0.014, 0, 255, 120, a)
-                    end
-                end
+    for veh in EnumerateVehicles() do
+        local coords = GetEntityCoords(veh)
+        local dist = #(coords - myCoords)
+        if dist < 200.0 then
+            local onScreen,x,y = World3dToScreen2d(coords.x,coords.y,coords.z)
+            if onScreen then
+                DrawRect(x,y,0.02,0.02,0,255,0,200)
             end
         end
     end
 end
 
-function Menu.DrawRadarUltra()
+function Menu.DrawRadar()
     if not Menu.ESP.radar then return end
-    if not GetEntityCoords or not PlayerPedId or not GetActivePlayers then return end
+    local baseX,baseY,size = 0.85,0.2,0.12
+    DrawRect(baseX,baseY,size,size,0,0,0,150)
 
-    local baseX = 0.88
-    local baseY = 0.22
-    local size = 0.14
-    local half = size / 2.0
-
-    DrawRect(baseX, baseY, size, size, 0, 0, 0, 150)
-    DrawRect(baseX, baseY, 0.002, size, 255, 255, 255, 70)
-    DrawRect(baseX, baseY, size, 0.002, 255, 255, 255, 70)
-
-    local myPed = PlayerPedId()
-    local myCoords = GetEntityCoords(myPed)
-    local heading = 0.0
-    if GetEntityHeading then
-        heading = math.rad(GetEntityHeading(myPed) or 0.0)
-    end
-
-    local range = 80.0
-    for _, player in ipairs(GetActivePlayers()) do
+    local myCoords = GetEntityCoords(PlayerPedId())
+    for _,player in ipairs(GetActivePlayers()) do
         if player ~= PlayerId() then
             local ped = GetPlayerPed(player)
-            if ped and ped ~= 0 then
-                local coords = GetEntityCoords(ped)
-                local dx = (coords.x or coords[1] or 0.0) - (myCoords.x or myCoords[1] or 0.0)
-                local dy = (coords.y or coords[2] or 0.0) - (myCoords.y or myCoords[2] or 0.0)
-
-                if Menu.ESP.rotatingRadar then
-                    local cosH = math.cos(-heading)
-                    local sinH = math.sin(-heading)
-                    local rx = (dx * cosH) - (dy * sinH)
-                    local ry = (dx * sinH) + (dy * cosH)
-                    dx, dy = rx, ry
-                end
-
-                dx = math.max(-range, math.min(range, dx))
-                dy = math.max(-range, math.min(range, dy))
-
-                local px = baseX + (dx / range) * half
-                local py = baseY + (dy / range) * half
-                DrawRect(px, py, 0.005, 0.005, 255, 0, 0, 255)
-            end
+            local coords = GetEntityCoords(ped)
+            local dx = coords.x - myCoords.x
+            local dy = coords.y - myCoords.y
+            DrawRect(baseX + dx*0.002, baseY + dy*0.002, 0.005,0.005,255,0,0,255)
         end
-    end
-
-    DrawRect(baseX, baseY, 0.006, 0.006, 255, 255, 255, 255)
-end
-
-local _Menu_OriginalRender_ESP_Ultra = Menu.Render
-function Menu.Render()
-    local result = _Menu_OriginalRender_ESP_Ultra()
-    pcall(function()
-        Menu.DrawPlayerESPUltra()
-        Menu.DrawVehicleESPUltra()
-        Menu.DrawRadarUltra()
-    end)
-    return result
-end
-
-function Menu.EnsureESPUltraCategory()
-    local function add_items(categoryList)
-        if type(categoryList) ~= "table" then return end
-        for _, cat in ipairs(categoryList) do
-            if cat and tostring(cat.name or "") == "Settings" and cat.tabs then
-                for _, tab in ipairs(cat.tabs) do
-                    if tab and tostring(tab.name or "") == "General" then
-                        tab.items = tab.items or {}
-                        local names = {}
-                        for _, item in ipairs(tab.items) do
-                            names[tostring(item.name or "")] = true
-                        end
-
-                        local to_add = {
-                            { name = "ESP Master", type = "toggle", value = Menu.ESP.enabled, onClick = function(v) Menu.ESP.enabled = v == true end },
-                            { name = "Only Visible Players", type = "toggle", value = Menu.ESP.onlyVisible, onClick = function(v) Menu.ESP.onlyVisible = v == true end },
-                            { name = "Off-Screen Arrows", type = "toggle", value = Menu.ESP.offscreenArrows, onClick = function(v) Menu.ESP.offscreenArrows = v == true end },
-                            { name = "Snapline ESP", type = "toggle", value = Menu.ESP.snapline, onClick = function(v) Menu.ESP.snapline = v == true end },
-                            { name = "Skeleton ESP", type = "toggle", value = Menu.ESP.skeleton, onClick = function(v) Menu.ESP.skeleton = v == true end },
-                            { name = "Head Marker", type = "toggle", value = Menu.ESP.head, onClick = function(v) Menu.ESP.head = v == true end },
-                            { name = "Vehicle ESP", type = "toggle", value = Menu.ESP.vehicle, onClick = function(v) Menu.ESP.vehicle = v == true end },
-                            { name = "Radar", type = "toggle", value = Menu.ESP.radar, onClick = function(v) Menu.ESP.radar = v == true end },
-                            { name = "Rotating Radar", type = "toggle", value = Menu.ESP.rotatingRadar, onClick = function(v) Menu.ESP.rotatingRadar = v == true end },
-                            { name = "Streamer Safe ESP", type = "toggle", value = Menu.ESP.streamerSafe, onClick = function(v) Menu.ESP.streamerSafe = v == true end },
-                            {
-                                name = "ESP Distance",
-                                type = "selector",
-                                options = {"100","150","200","300","500"},
-                                selected = 4,
-                                onClick = function(index, option)
-                                    local val = tonumber(option or "300") or 300.0
-                                    Menu.ESP.maxDistance = val
-                                end
-                            }
-                        }
-
-                        for _, item in ipairs(to_add) do
-                            if not names[item.name] then
-                                table.insert(tab.items, item)
-                            end
-                        end
-                        return
-                    end
-                end
-            end
-        end
-    end
-
-    if Menu.TopLevelTabs then
-        for _, top in ipairs(Menu.TopLevelTabs) do
-            if top and top.categories then
-                add_items(top.categories)
-            end
-        end
-    end
-    if Menu.Categories then
-        add_items(Menu.Categories)
     end
 end
 
 CreateThread(function()
     while true do
-        pcall(function()
-            Menu.EnsureESPUltraCategory()
-        end)
-        Wait(1500)
+        Wait(0)
+        Menu.DrawPlayerESP()
+        Menu.DrawVehicleESP()
+        Menu.DrawRadar()
     end
 end)
 
+CreateThread(function()
+    while true do
+        Wait(0)
+        if IsControlJustReleased(0, 168) then
+            Menu.ESP.enabled = not Menu.ESP.enabled
+        end
+    end
+end)
 
 return Menu
