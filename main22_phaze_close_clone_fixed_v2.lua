@@ -290,10 +290,8 @@ function Menu.DrawHeader()
     if Susano and Susano.DrawRectFilled then
         Susano.DrawRectFilled(x, y, width, bannerHeight, (st.panel.r or 0)/255, (st.panel.g or 0)/255, (st.panel.b or 0)/255, 0.98, 0)
         Susano.DrawRectFilled(x, y, width, bannerHeight * 0.55, 18/255, 30/255, 60/255, 0.28, 0)
-        Susano.DrawRectFilled(x, y + bannerHeight - 3, width, 3, (st.blue.r or 33)/255, (st.blue.g or 135)/255, (st.blue.b or 255)/255, 1.0, 0)
     else
         Menu.DrawRect(x, y, width, bannerHeight, 2, 7, 15, 250)
-        Menu.DrawRect(x, y + bannerHeight - 3, width, 3, 33, 135, 255, 255)
     end
 
     if Menu.Banner.enabled and Menu.bannerTexture and Menu.bannerTexture > 0 and Susano and Susano.DrawImage then
@@ -6982,15 +6980,8 @@ function Menu.DrawCategories()
     end
 
     Menu.DrawPhazeBox(x, startY, width, mainMenuHeight, {r=0,g=0,b=0,a=235}, 0)
-    local title = "Main menu"
-    local tw = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(title, 17 * scale)) or (#title * 8 * scale)
     Menu.DrawText(x + (10 * scale), startY + (mainMenuHeight / 2) - (9 * scale), title, 17, 1.0, 1.0, 1.0, 1.0)
-
-    local railX = x + (4 * scale)
     local listStartY = startY + mainMenuHeight + mainMenuSpacing
-    local listHeight = math.min(maxVisible, totalCategories) * itemHeight
-    if listHeight < itemHeight then listHeight = itemHeight end
-    Menu.DrawPhazeBox(railX, listStartY, 4 * scale, listHeight, st.blue or {r=33,g=135,b=255,a=255}, 0)
 
     local actualVisibleCount = 0
     for displayIndex = 1, math.min(maxVisible, totalCategories) do
@@ -7015,13 +7006,10 @@ function Menu.DrawCategories()
             end
 
             local label = Menu.StripColorCodes and Menu.StripColorCodes(category.name) or tostring(category.name)
-            local icon = Menu.GetPhazeCategoryIcon(label)
-            local iconX = rowX + (8 * scale)
-            local textX = rowX + (34 * scale)
+            local textX = rowX + (14 * scale)
             local textY = rowY + (rowH / 2) - (9 * scale)
             local arrowText = "»"
 
-            Menu.DrawText(iconX, textY, icon, 15, 1.0, 1.0, 1.0, 1.0)
             Menu.DrawText(textX, textY, label, 18, 1.0, 1.0, 1.0, 1.0)
             local aw = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(arrowText, 18 * scale)) or (8 * scale)
             Menu.DrawText(rowX + rowW - aw - (8 * scale), textY, arrowText, 18, 1.0, 1.0, 1.0, 1.0)
