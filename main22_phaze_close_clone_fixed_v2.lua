@@ -1510,10 +1510,37 @@ function Menu.DrawFooter()
     local p = Menu.GetScaledPosition()
     local scale = Menu.Scale or 1.0
     local st = Menu.PhazeStyle or {}
-    local totalRows = math.min(Menu.ItemsPerPage, math.max(0, #Menu.Categories - 1))
+
+    local totalRows = 0
+    if Menu.OpenedCategory then
+        local category = Menu.Categories and Menu.Categories[Menu.OpenedCategory]
+        if category and category.hasTabs and category.tabs then
+            local currentTab = category.tabs[Menu.CurrentTab]
+            local items = (currentTab and currentTab.items) or {}
+            totalRows = math.min(Menu.ItemsPerPage, #items)
+
+            local categoryName = tostring(category.name or "")
+            local hideTabs = (categoryName == "Online")
+            if not hideTabs and #category.tabs > 1 then
+                totalRows = totalRows + 1
+            end
+        end
+    else
+        totalRows = math.min(Menu.ItemsPerPage, math.max(0, #Menu.Categories - 1))
+    end
+
     local footerY = p.y + (Menu.Banner.height * scale) + p.mainMenuHeight + (totalRows * p.itemHeight)
     local footerTextLeft = "Build: 262119"
-    local footerTextRight = string.format("%d / %d", math.max(1, Menu.CurrentCategory - 1), math.max(1, math.max(0, #Menu.Categories - 1)))
+    local footerTextRight
+
+    if Menu.OpenedCategory then
+        local category = Menu.Categories and Menu.Categories[Menu.OpenedCategory]
+        local currentTab = category and category.tabs and category.tabs[Menu.CurrentTab]
+        local totalItems = currentTab and currentTab.items and #currentTab.items or 1
+        footerTextRight = string.format("%d / %d", math.max(1, Menu.CurrentItem), math.max(1, totalItems))
+    else
+        footerTextRight = string.format("%d / %d", math.max(1, Menu.CurrentCategory - 1), math.max(1, math.max(0, #Menu.Categories - 1)))
+    end
 
     Menu.DrawPhazeBox(p.x, footerY, p.width, p.footerHeight, st.footer or {r=0,g=0,b=0,a=235}, 0)
 
@@ -1527,6 +1554,7 @@ function Menu.DrawFooter()
 
     local rw = (Susano and Susano.GetTextWidth and Susano.GetTextWidth(footerTextRight, 15 * scale)) or (#footerTextRight * 7 * scale)
     Menu.DrawText(p.x + p.width - rw - (12 * scale), textY, footerTextRight, 15, 1.0, 1.0, 1.0, 1.0)
+end
 end
 
 function Menu.DrawKeySelector(alpha)
