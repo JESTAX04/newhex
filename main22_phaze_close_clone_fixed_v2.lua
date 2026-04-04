@@ -43,6 +43,10 @@ Menu.BindingKey = nil
 Menu.BindingKeyName = nil
 
 Menu.ShowKeybinds = false
+Menu.Anim = { alpha = 0.0, scale = 0.96 }
+Menu.SearchQuery = ""
+Menu.BlurEnabled = true
+
 
 
 Menu.CurrentTopTab = 1
@@ -2075,7 +2079,65 @@ function Menu.DrawBackground()
 end
 
 
+
+function Menu.UpdateAnim(opened)
+    local targetAlpha = opened and 1.0 or 0.0
+    local targetScale = opened and 1.0 or 0.96
+    Menu.Anim.alpha = Menu.Anim.alpha + (targetAlpha - Menu.Anim.alpha) * 0.18
+    Menu.Anim.scale = Menu.Anim.scale + (targetScale - Menu.Anim.scale) * 0.18
+end
+
+function Menu.UpdateBlur()
+    if not Menu.BlurEnabled then return end
+    if Menu.Visible then
+        if TriggerScreenblurFadeIn then pcall(TriggerScreenblurFadeIn, 150) end
+    else
+        if TriggerScreenblurFadeOut then pcall(TriggerScreenblurFadeOut, 150) end
+    end
+end
+
+function Menu.FilterItems(items)
+    if not items or Menu.SearchQuery == "" then return items end
+    local filtered = {}
+    local q = string.lower(Menu.SearchQuery)
+    for _, item in ipairs(items) do
+        local n = string.lower(tostring(item.name or item.separatorText or ""))
+        if string.find(n, q, 1, true) then
+            filtered[#filtered + 1] = item
+        end
+    end
+    return filtered
+end
+
+function Menu.PlayNavSound()
+    if PlaySoundFrontend then
+        pcall(PlaySoundFrontend, -1, "NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+    end
+end
+
+function Menu.DrawSearchBox()
+    if not Menu.Visible then return end
+    local p = Menu.GetScaledPosition()
+    local scale = Menu.Scale or 1.0
+    local x = p.x
+    local y = p.y + (Menu.Banner.enabled and (Menu.Banner.height * scale) or p.headerHeight) + p.mainMenuHeight + (p.itemHeight * 9) + p.footerSpacing + p.footerHeight + 10
+    local w = p.width
+    local h = 28 * scale
+    if Susano and Susano.DrawRectFilled then
+        Susano.DrawRectFilled(x, y, w, h, 12/255, 16/255, 28/255, 0.92, 6)
+        Susano.DrawRectFilled(x + 6, y + 6, 16 * scale, 16 * scale, 188/255, 19/255, 29/255, 0.95, 4)
+    else
+        Menu.DrawRoundedRect(x, y, w, h, 12, 16, 28, 235, 6)
+    end
+    Menu.DrawText(x + 10, y + 6, "/", 12, 1.0, 1.0, 1.0, 1.0)
+    local txt = Menu.SearchQuery ~= "" and Menu.SearchQuery or "Search"
+    local alpha = Menu.SearchQuery ~= "" and 1.0 or 0.65
+    Menu.DrawText(x + 30, y + 6, txt, 12, 1.0, 1.0, 1.0, alpha)
+end
+
 function Menu.Render()
+    Menu.UpdateAnim(Menu.Visible)
+    Menu.UpdateBlur()
   if Menu.TopLevelTabs and not Menu.Categories then
     Menu.UpdateCategoriesFromTopTab()
   end
