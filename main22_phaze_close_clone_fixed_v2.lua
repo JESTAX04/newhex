@@ -2350,6 +2350,12 @@ end
 
 function Menu.CloneNPCAttackPlayer(playerData)
   if not playerData then return end
+
+function Menu.CloneNPCAttackPlayerFun(playerData)
+  if not playerData then return end
+
+function Menu.CloneNPCAttackPlayerRPG(playerData)
+  if not playerData then return end
   if not GetPlayerFromServerId or not GetPlayerPed then return end
 
   local target = GetPlayerFromServerId(playerData.id)
@@ -5761,6 +5767,85 @@ function Menu.TeleportToPlayer(playerData)
   SetEntityCoords(myPed, x, y, z + 1.0, false, false, false, false)
 end
 
+
+Menu.TrollObjectModels = {
+  gas6 = "prop_tree_lficus_06",
+  gas5 = "prop_tree_olive_01",
+  gasuw = "prop_tree_jacada_02",
+  polabig = "prop_palm_sm_01a",
+  polabig2 = "prop_palm_sm_01e",
+  slpola = "prop_palm_med_01a",
+  minpatii = "prop_coffin_02",
+  minpati2 = "prop_gravestones_09a"
+}
+
+function Menu.SpawnTrollObject(playerData, objectKey)
+  if not playerData or not objectKey then return end
+  if not GetPlayerFromServerId then return end
+
+  local target = GetPlayerFromServerId(playerData.id)
+  if target == -1 then
+    print("Player not found!")
+    return
+  end
+
+  local modelName = Menu.TrollObjectModels[objectKey]
+  if not modelName then
+    print("Troll object not found: " .. tostring(objectKey))
+    return
+  end
+
+  if not GetPlayerPed or not GetEntityCoords or not RequestModel or not HasModelLoaded or not CreateObject or not AttachEntityToEntity or not GetPedBoneIndex then
+    print("Troll object failed: natives missing")
+    return
+  end
+
+  local ped = GetPlayerPed(target)
+  if not ped or ped == 0 then return end
+  local coords = GetEntityCoords(ped)
+  local x = coords.x or coords[1] or 0.0
+  local y = coords.y or coords[2] or 0.0
+  local z = coords.z or coords[3] or 0.0
+  local model = GetHashKey(modelName)
+
+  RequestModel(model)
+  local tries = 0
+  while not HasModelLoaded(model) and tries < 200 do
+    tries = tries + 1
+    Wait(10)
+  end
+
+  local obj = CreateObject(model, x, y, z, true, true, true)
+  if obj and obj ~= 0 then
+    AttachEntityToEntity(obj, ped, GetPedBoneIndex(ped, 0), 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, true, true, false, true, 1, true)
+    if SetEntityAsMissionEntity then
+      SetEntityAsMissionEntity(obj, true, true)
+    end
+  end
+end
+
+function Menu.BuildTrollObjectItems(selectedPlayer)
+  return {
+    {
+      name = "Back To Player Actions",
+      type = "action",
+      onClick = function()
+        Menu.PlayerList.submenu = nil
+        Menu.RefreshOnlinePlayers()
+      end
+    },
+    { isSeparator = true, separatorText = "SELECT TROLL OBJECT" },
+    { name = "gas6", type = "action", onClick = function() Menu.SpawnTrollObject(selectedPlayer, "gas6") end },
+    { name = "gas5", type = "action", onClick = function() Menu.SpawnTrollObject(selectedPlayer, "gas5") end },
+    { name = "gasuw", type = "action", onClick = function() Menu.SpawnTrollObject(selectedPlayer, "gasuw") end },
+    { name = "polabig", type = "action", onClick = function() Menu.SpawnTrollObject(selectedPlayer, "polabig") end },
+    { name = "polabig2", type = "action", onClick = function() Menu.SpawnTrollObject(selectedPlayer, "polabig2") end },
+    { name = "slpola", type = "action", onClick = function() Menu.SpawnTrollObject(selectedPlayer, "slpola") end },
+    { name = "minpatii", type = "action", onClick = function() Menu.SpawnTrollObject(selectedPlayer, "minpatii") end },
+    { name = "minpati 2", type = "action", onClick = function() Menu.SpawnTrollObject(selectedPlayer, "minpati2") end }
+  }
+end
+
 function Menu.TrollPlayer(playerData)
   if not playerData then return end
   if not GetPlayerFromServerId then return end
@@ -6052,6 +6137,8 @@ function Menu.RefreshOnlinePlayers()
   if selectedPlayer then
     if Menu.PlayerList.submenu == "particleeffects" then
       items = Menu.BuildParticleLoopItems(selectedPlayer)
+    elseif Menu.PlayerList.submenu == "trollobjects" then
+      items = Menu.BuildTrollObjectItems(selectedPlayer)
     else
       local coordText = "Coords: N/A"
       local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
@@ -6114,7 +6201,8 @@ function Menu.RefreshOnlinePlayers()
           name = "Troll Player",
           type = "action",
           onClick = function()
-            Menu.TrollPlayer(selectedPlayer)
+            Menu.PlayerList.submenu = "trollobjects"
+            Menu.RefreshOnlinePlayers()
           end
         },
         {
@@ -6176,6 +6264,20 @@ function Menu.RefreshOnlinePlayers()
           type = "action",
           onClick = function()
             Menu.CloneNPCAttackPlayer(selectedPlayer)
+          end
+        },
+        {
+          name = "Clone NPC Attack Fun",
+          type = "action",
+          onClick = function()
+            Menu.CloneNPCAttackPlayerFun(selectedPlayer)
+          end
+        },
+        {
+          name = "Clone NPC Attack RPG",
+          type = "action",
+          onClick = function()
+            Menu.CloneNPCAttackPlayerRPG(selectedPlayer)
           end
         },
         {
