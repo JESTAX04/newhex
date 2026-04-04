@@ -43,8 +43,6 @@ Menu.BindingKey = nil
 Menu.BindingKeyName = nil
 
 Menu.ShowKeybinds = false
-Menu.FlingingPlayer = false
-Menu.FlingedPlayer = nil
 
 
 Menu.CurrentTopTab = 1
@@ -2214,20 +2212,6 @@ Menu.KeyNames = {
 function Menu.GetKeyName(keyCode)
   
 
-
-
-function Menu.ToggleFlingPlayer(selectedPlayer, state)
-  Menu.FlingingPlayer = state and true or false
-  if Menu.FlingingPlayer and selectedPlayer then
-    Menu.FlingedPlayer = {
-      id = selectedPlayer.id,
-      clientId = selectedPlayer.clientId,
-      name = selectedPlayer.name
-    }
-  else
-    Menu.FlingedPlayer = nil
-  end
-end
 
 Menu.HexAllIncludeSelf = Menu.HexAllIncludeSelf or false
 
@@ -6051,19 +6035,25 @@ function Menu.RefreshOnlinePlayers()
           end
         },
         {
+          name = (Menu.FlingPlayerEnabled and Menu.FlingPlayerTarget and Menu.FlingPlayerTarget.clientId == selectedPlayer.clientId) and "Stop Fling Player" or "Fling Player",
+          type = "action",
+          onClick = function()
+            Menu.ToggleFlingPlayer(selectedPlayer)
+            Menu.RefreshOnlinePlayers()
+          end
+        },
+        {
+          name = "Launch Players Vehicle",
+          type = "action",
+          onClick = function()
+            Menu.LaunchPlayersVehicle(selectedPlayer)
+          end
+        },
+        {
           name = "Troll Player",
           type = "action",
           onClick = function()
             Menu.TrollPlayer(selectedPlayer)
-          end
-        },
-        {
-          name = "Fling Player",
-          type = "toggle",
-          value = Menu.FlingingPlayer and Menu.FlingedPlayer and selectedPlayer and ((Menu.FlingedPlayer.id or Menu.FlingedPlayer.clientId) == (selectedPlayer.id or selectedPlayer.clientId)) or false,
-          onClick = function(state)
-            Menu.ToggleFlingPlayer(selectedPlayer, state)
-            Menu.RefreshOnlinePlayers()
           end
         },
         {
@@ -7102,47 +7092,69 @@ if Menu.PruneOnlineTabs then
 end
 
 
-CreateThread(function()
-  while true do
-    if Menu.FlingingPlayer and Menu.FlingedPlayer then
-      local target = Menu.FlingedPlayer
-      local clientId = target.clientId
-      if (clientId == nil or clientId == -1) and target.id ~= nil and GetPlayerFromServerId then
-        clientId = GetPlayerFromServerId(target.id)
-      end
+-- ===== Added from RicoMenu player actions =====
+Menu.FlingPlayerEnabled = Menu.FlingPlayerEnabled or false
+Menu.FlingPlayerTarget = Menu.FlingPlayerTarget or nil
 
-      if clientId ~= nil and clientId ~= -1 and GetPlayerPed and GetEntityCoords then
-        local ped = GetPlayerPed(clientId)
-        if ped and ped ~= 0 then
-          local coords = GetEntityCoords(ped)
-          local x = coords.x or coords[1] or 0.0
-          local y = coords.y or coords[2] or 0.0
-          local z = coords.z or coords[3] or 0.0
-
-          pcall(function()
-            Citizen.InvokeNative(0xE3AD2BDBAEE269AC, x, y, z, 4, 1.0, 0, 1, 0.0, 1)
-          end)
-
-          if AddExplosion then
-            pcall(function()
-              AddExplosion(x, y, z, 4, 1.0, false, true, 0.0, false)
-            end)
-          end
-
-          if NetworkRequestControlOfEntity and ApplyForceToEntity then
-            pcall(function()
-              NetworkRequestControlOfEntity(ped)
-              ApplyForceToEntity(ped, 1, 0.0, 0.0, 180.0, 0.0, 0.0, 0.0, 0, true, true, true, false, true)
-            end)
-          end
-        end
-      end
-
-      Wait(250)
-    else
-      Wait(300)
+function Menu.RequestControlOnce(entity)
+    if not entity or entity == 0 then return false end
+    if not NetworkIsInSession or NetworkHasControlOfEntity(entity) then
+        return true
     end
-  end
+    local netId = NetworkGetNetworkIdFromEntity(entity)
+    if netId and netId ~= 0 then
+        SetNetworkIdCanMigrate(netId, true)
+    end
+    return NetworkRequestControlOfEntity(entity)
+end
+
+function Menu.ToggleFlingPlayer(selectedPlayer)
+    if Menu.FlingPlayerEnabled and Menu.FlingPlayerTarget and selectedPlayer and Menu.FlingPlayerTarget.clientId == selectedPlayer.clientId then
+        Menu.FlingPlayerEnabled = false
+        Menu.FlingPlayerTarget = nil
+        return
+    end
+
+    Menu.FlingPlayerEnabled = true
+    Menu.FlingPlayerTarget = selectedPlayer
+end
+
+function Menu.LaunchPlayersVehicle(selectedPlayer)
+    if not selectedPlayer then return end
+    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
+    if not ped or ped == 0 or not DoesEntityExist(ped) then
+        if ShowInfo then ShowInfo("~r~Player Not Found!") end
+        return
+    end
+
+    if not IsPedInAnyVehicle(ped, false) then
+        if ShowInfo then ShowInfo("~r~Player Not In Vehicle!") end
+        return
+    end
+
+    local veh = GetVehiclePedIsIn(ped, false)
+    if not veh or veh == 0 then
+        if ShowInfo then ShowInfo("~r~Vehicle Not Found!") end
+        return
+    end
+
+    Menu.RequestControlOnce(veh)
+    ApplyForceToEntity(veh, 3, 0.0, 0.0, 5000000.0, 0.0, 0.0, 0.0, 0, 0, 1, 1, 0, 1)
+end
+
+CreateThread(function()
+    while true do
+        if Menu.FlingPlayerEnabled and Menu.FlingPlayerTarget then
+            local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(Menu.FlingPlayerTarget.clientId) or nil
+            if ped and ped ~= 0 and DoesEntityExist(ped) then
+                local coords = GetEntityCoords(ped)
+                if coords then
+                    Citizen.InvokeNative(0xE3AD2BDBAEE269AC, coords.x, coords.y, coords.z, 4, 1.0, 0, 1, 0.0, 1)
+                end
+            end
+        end
+        Wait(0)
+    end
 end)
 
 return Menu
