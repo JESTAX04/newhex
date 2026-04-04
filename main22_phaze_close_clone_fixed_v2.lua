@@ -2923,6 +2923,21 @@ function Menu.CarSpinTrap(playerData)
   end
 end
 
+
+
+function Menu.LaunchPlayer(selectedPlayer)
+    if not selectedPlayer then return end
+
+    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
+    if not ped or ped == 0 or not DoesEntityExist(ped) then
+        if ShowInfo then ShowInfo("~r~Player Not Found!") end
+        return
+    end
+
+    Menu.RequestControlOnce(ped)
+    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
+end
+
 return Menu.KeyNames[keyCode] or ("Key 0x" .. string.format("%02X", keyCode))
 end
 
@@ -4043,6 +4058,21 @@ function Menu.CarSpinTrap(playerData)
     if SetEntityRotation then SetEntityRotation(veh, 0.0, 0.0, i * 40.0, 2, true) end
     Wait(100)
   end
+end
+
+
+
+function Menu.LaunchPlayer(selectedPlayer)
+    if not selectedPlayer then return end
+
+    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
+    if not ped or ped == 0 or not DoesEntityExist(ped) then
+        if ShowInfo then ShowInfo("~r~Player Not Found!") end
+        return
+    end
+
+    Menu.RequestControlOnce(ped)
+    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
 end
 
 return Menu.Title
@@ -5202,6 +5232,21 @@ function Menu.CarSpinTrap(playerData)
     if SetEntityRotation then SetEntityRotation(veh, 0.0, 0.0, i * 40.0, 2, true) end
     Wait(100)
   end
+end
+
+
+
+function Menu.LaunchPlayer(selectedPlayer)
+    if not selectedPlayer then return end
+
+    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
+    if not ped or ped == 0 or not DoesEntityExist(ped) then
+        if ShowInfo then ShowInfo("~r~Player Not Found!") end
+        return
+    end
+
+    Menu.RequestControlOnce(ped)
+    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
 end
 
 return Menu.StreamProofBackend, Menu.StreamProofStatus
@@ -6546,10 +6591,40 @@ end
 function Menu.GetHeaderTitle()
   if Menu.OpenedCategory then
     local cat = Menu.Categories and Menu.Categories[Menu.OpenedCategory]
-    if cat then return Menu.StripColorCodes(cat.name) end
+    if cat then 
+
+function Menu.LaunchPlayer(selectedPlayer)
+    if not selectedPlayer then return end
+
+    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
+    if not ped or ped == 0 or not DoesEntityExist(ped) then
+        if ShowInfo then ShowInfo("~r~Player Not Found!") end
+        return
+    end
+
+    Menu.RequestControlOnce(ped)
+    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
+end
+
+return Menu.StripColorCodes(cat.name) end
   end
   if Menu.Categories and Menu.Categories[1] and Menu.Categories[1].name then
-    return Menu.StripColorCodes(Menu.Categories[1].name)
+    
+
+function Menu.LaunchPlayer(selectedPlayer)
+    if not selectedPlayer then return end
+
+    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
+    if not ped or ped == 0 or not DoesEntityExist(ped) then
+        if ShowInfo then ShowInfo("~r~Player Not Found!") end
+        return
+    end
+
+    Menu.RequestControlOnce(ped)
+    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
+end
+
+return Menu.StripColorCodes(Menu.Categories[1].name)
   end
   return "Main"
 end
@@ -7139,7 +7214,7 @@ function Menu.LaunchPlayersVehicle(selectedPlayer)
     end
 
     Menu.RequestControlOnce(veh)
-    ApplyForceToEntity(veh, 3, 0.0, 0.0, 5000000.0, 0.0, 0.0, 0.0, 0, 0, 1, 1, 0, 1)
+    ApplyForceToEntity(veh, 3, 0.0, 0.0, 8000000.0, 0.0, 0.0, 0.0, 0, 0, 1, 1, 0, 1)
 end
 
 CreateThread(function()
@@ -7156,5 +7231,20 @@ CreateThread(function()
         Wait(0)
     end
 end)
+
+
+
+function Menu.LaunchPlayer(selectedPlayer)
+    if not selectedPlayer then return end
+
+    local ped = Menu.GetPlayerPedSafe and Menu.GetPlayerPedSafe(selectedPlayer.clientId) or nil
+    if not ped or ped == 0 or not DoesEntityExist(ped) then
+        if ShowInfo then ShowInfo("~r~Player Not Found!") end
+        return
+    end
+
+    Menu.RequestControlOnce(ped)
+    ApplyForceToEntity(ped, 1, 0.0, 0.0, 3000.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
+end
 
 return Menu
