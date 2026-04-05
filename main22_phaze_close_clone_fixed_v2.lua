@@ -2212,8 +2212,8 @@ Menu.KeyNames = {
 }
 
 function Menu.GetKeyName(keyCode)
-  return Menu.KeyNames[keyCode] or "Unknown"
-end
+  
+
 
 Menu.HexAllIncludeSelf = Menu.HexAllIncludeSelf or false
 
@@ -3179,6 +3179,9 @@ function Menu.LaunchPlayerReal(selectedPlayer)
     true, true, true,
     true, true
   )
+end
+
+return Menu.KeyNames[keyCode] or ("Key 0x" .. string.format("%02X", keyCode))
 end
 
 function Menu.GetMousePosition()
