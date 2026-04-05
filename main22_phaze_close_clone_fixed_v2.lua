@@ -463,7 +463,7 @@ function Menu.DrawTabs(category, x, startY, width, tabHeight)
     if name == "Troll" then return "T" end
     if name == "Players" then return "O" end
     if name == "World Troll" then return "W" end
-    if name == "Training AI" then return "A" end
+    if name == "World Troll" then return "W" end
     return ">"
   end
 
@@ -3021,229 +3021,156 @@ function Menu.CarSpinTrap(playerData)
 end
 
 
--- ===== TRAINING AI PACK =====
-Menu.AIState = Menu.AIState or {
-  spawned = {},
-  difficulty = 2,
-  followDistance = 3.0,
-  defendRadius = 20.0,
-  arenaRadius = 35.0,
-  arenaCenter = nil,
-  patrolPoints = {},
-  enabledCompanion = false,
-  enabledGuard = false,
-  enabledArena = false,
-  enabledPatrol = false
-}
+-- ===== WORLD TROLL IMPLEMENTATIONS =====
+function Menu.BlackHoleAllPlayers()
+  if not GetActivePlayers or not GetPlayerPed or not PlayerPedId or not GetEntityCoords or not SetEntityCoords then return end
+  local myPed = PlayerPedId()
+  if not myPed or myPed == 0 then return end
+  local myCoords = GetEntityCoords(myPed)
+  local mx = myCoords.x or myCoords[1] or 0.0
+  local my = myCoords.y or myCoords[2] or 0.0
+  local mz = myCoords.z or myCoords[3] or 0.0
 
-local function MenuAIDistance(a1, a2, a3, b1, b2, b3)
-  local dx = (a1 or 0.0) - (b1 or 0.0)
-  local dy = (a2 or 0.0) - (b2 or 0.0)
-  local dz = (a3 or 0.0) - (b3 or 0.0)
-  return math.sqrt(dx * dx + dy * dy + dz * dz)
-end
-
-local function ai_get_weapon_for_distance(dist)
-  if dist < 8.0 then
-    return "WEAPON_PUMPSHOTGUN"
-  elseif dist < 25.0 then
-    return "WEAPON_CARBINERIFLE"
-  else
-    return "WEAPON_SNIPERRIFLE"
-  end
-end
-
-local function ai_request_model(model)
-  if not RequestModel or not HasModelLoaded then return true end
-  RequestModel(model)
-  local tries = 0
-  while not HasModelLoaded(model) and tries < 200 do
-    tries = tries + 1
-    Wait(0)
-  end
-  return HasModelLoaded(model)
-end
-
-function Menu.ClearTrainingBots()
-  for _, ped in ipairs(Menu.AIState.spawned or {}) do
-    if ped and DoesEntityExist and DoesEntityExist(ped) and DeleteEntity then
-      DeleteEntity(ped)
+  for _, pid in ipairs(GetActivePlayers()) do
+    local ped = GetPlayerPed(pid)
+    if ped and ped ~= 0 and ped ~= myPed then
+      SetEntityCoords(ped, mx, my, mz, false, false, false, false)
     end
   end
-  Menu.AIState.spawned = {}
-  Menu.AIState.enabledCompanion = false
-  Menu.AIState.enabledGuard = false
-  Menu.AIState.enabledArena = false
-  Menu.AIState.enabledPatrol = false
 end
 
-function Menu.SpawnTrainingBot(kind)
-  if not PlayerPedId or not GetEntityCoords or not CreatePed then return end
-  local myPed = PlayerPedId()
-  if not myPed or myPed == 0 then return end
-
-  local coords = GetEntityCoords(myPed)
-  local x = (coords.x or coords[1] or 0.0) + math.random(-4, 4)
-  local y = (coords.y or coords[2] or 0.0) + math.random(-4, 4)
-  local z = coords.z or coords[3] or 0.0
-
-  local model = `s_m_y_blackops_01`
-  if kind == "guard" then model = `s_m_m_security_01` end
-  if kind == "arena" then model = `s_m_y_marine_03` end
-
-  if not ai_request_model(model) then return end
-  local ped = CreatePed(4, model, x, y, z, 0.0, true, true)
-  if not ped or ped == 0 then return end
-
-  if SetEntityAsMissionEntity then SetEntityAsMissionEntity(ped, true, true) end
-  if SetPedArmour then SetPedArmour(ped, 200) end
-  if SetEntityHealth then SetEntityHealth(ped, 300) end
-  if SetPedAccuracy then SetPedAccuracy(ped, ({45, 65, 85})[Menu.AIState.difficulty or 2] or 65) end
-  if SetPedCombatAbility then SetPedCombatAbility(ped, 2) end
-  if SetPedCombatRange then SetPedCombatRange(ped, 2) end
-  if SetPedCombatMovement then SetPedCombatMovement(ped, 2) end
-  if SetPedCombatAttributes then
-    SetPedCombatAttributes(ped, 46, true)
-    SetPedCombatAttributes(ped, 5, true)
-  end
-  if SetPedDropsWeaponsWhenDead then SetPedDropsWeaponsWhenDead(ped, false) end
-  if SetBlockingOfNonTemporaryEvents then SetBlockingOfNonTemporaryEvents(ped, true) end
-
-  if GiveWeaponToPed and SetCurrentPedWeapon and GetHashKey then
-    local w = GetHashKey("WEAPON_CARBINERIFLE")
-    GiveWeaponToPed(ped, w, 9999, false, true)
-    SetCurrentPedWeapon(ped, w, true)
+function Menu.VehicleRainAllPlayers()
+  if not GetActivePlayers or not GetPlayerPed or not GetEntityCoords or not CreateVehicle then return end
+  local model = GetHashKey and GetHashKey("adder") or `adder`
+  if RequestModel and HasModelLoaded then
+    RequestModel(model)
+    local tries = 0
+    while not HasModelLoaded(model) and tries < 200 do
+      tries = tries + 1
+      Wait(0)
+    end
   end
 
-  table.insert(Menu.AIState.spawned, ped)
-  return ped
-end
-
-function Menu.SpawnCompanionFollower()
-  local ped = Menu.SpawnTrainingBot("companion")
-  if ped then Menu.AIState.enabledCompanion = true end
-end
-
-function Menu.SpawnGuardNPC()
-  local ped = Menu.SpawnTrainingBot("guard")
-  if ped then Menu.AIState.enabledGuard = true end
-end
-
-function Menu.SpawnArenaEnemy()
-  local ped = Menu.SpawnTrainingBot("arena")
-  if ped and PlayerPedId and GetEntityCoords then
-    Menu.AIState.arenaCenter = GetEntityCoords(PlayerPedId())
-    Menu.AIState.enabledArena = true
-  end
-end
-
-function Menu.SetPatrolHere()
-  if not PlayerPedId or not GetEntityCoords then return end
-  local myPed = PlayerPedId()
-  if not myPed or myPed == 0 then return end
-  table.insert(Menu.AIState.patrolPoints, GetEntityCoords(myPed))
-  Menu.AIState.enabledPatrol = true
-end
-
-function Menu.CycleAIDifficulty()
-  Menu.AIState.difficulty = (Menu.AIState.difficulty or 2) + 1
-  if Menu.AIState.difficulty > 3 then Menu.AIState.difficulty = 1 end
-end
-
-function Menu.CycleFollowDistance()
-  local vals = {3.0, 5.0, 8.0}
-  local cur = Menu.AIState.followDistance or 3.0
-  local idx = 1
-  for i, v in ipairs(vals) do if v == cur then idx = i end end
-  idx = idx + 1
-  if idx > #vals then idx = 1 end
-  Menu.AIState.followDistance = vals[idx]
-end
-
-function Menu.CycleDefendRadius()
-  local vals = {15.0, 25.0, 40.0}
-  local cur = Menu.AIState.defendRadius or 20.0
-  local idx = 1
-  for i, v in ipairs(vals) do if v == cur then idx = i end end
-  idx = idx + 1
-  if idx > #vals then idx = 1 end
-  Menu.AIState.defendRadius = vals[idx]
-end
-
-CreateThread(function()
-  local patrolIndex = 1
-  while true do
-    if PlayerPedId and GetEntityCoords then
-      local myPed = PlayerPedId()
-      if myPed and myPed ~= 0 then
-        local myCoords = GetEntityCoords(myPed)
-        for _, ped in ipairs(Menu.AIState.spawned or {}) do
-          if ped and DoesEntityExist and DoesEntityExist(ped) and not (IsPedDeadOrDying and IsPedDeadOrDying(ped, true)) then
-            local pedCoords = GetEntityCoords(ped)
-            local dist = MenuAIDistance(myCoords.x, myCoords.y, myCoords.z, pedCoords.x, pedCoords.y, pedCoords.z)
-
-            if GiveWeaponToPed and SetCurrentPedWeapon and GetHashKey then
-              local weapon = GetHashKey(ai_get_weapon_for_distance(dist))
-              GiveWeaponToPed(ped, weapon, 9999, false, true)
-              SetCurrentPedWeapon(ped, weapon, true)
-            end
-
-            if GetEntityHealth and TaskGoToCoordAnyMeans and GetEntityHealth(ped) < 120 then
-              TaskGoToCoordAnyMeans(ped, myCoords.x - 8.0, myCoords.y - 8.0, myCoords.z, 2.0, 0, 0, 786603, 0xbf800000)
-            else
-              if Menu.AIState.enabledCompanion and TaskFollowToOffsetOfEntity then
-                if dist > (Menu.AIState.followDistance or 3.0) then
-                  TaskFollowToOffsetOfEntity(ped, myPed, 0.0, -1.5, 0.0, 3.0, -1, 2.0, true)
-                end
-              end
-
-              if Menu.AIState.enabledGuard and GetActivePlayers and GetPlayerPed and TaskCombatPed then
-                local nearest, nearestDist = nil, 99999.0
-                for _, pid in ipairs(GetActivePlayers()) do
-                  local otherPed = GetPlayerPed(pid)
-                  if otherPed and otherPed ~= myPed then
-                    local oc = GetEntityCoords(otherPed)
-                    local d = MenuAIDistance(myCoords.x, myCoords.y, myCoords.z, oc.x, oc.y, oc.z)
-                    if d < nearestDist then
-                      nearestDist = d
-                      nearest = otherPed
-                    end
-                  end
-                end
-                if nearest and nearestDist < (Menu.AIState.defendRadius or 20.0) then
-                  TaskCombatPed(ped, nearest, 0, 16)
-                end
-              end
-
-              if Menu.AIState.enabledArena and Menu.AIState.arenaCenter and TaskGoToCoordAnyMeans and TaskCombatPed then
-                local center = Menu.AIState.arenaCenter
-                local dc = MenuAIDistance(center.x, center.y, center.z, pedCoords.x, pedCoords.y, pedCoords.z)
-                if dc > (Menu.AIState.arenaRadius or 35.0) then
-                  TaskGoToCoordAnyMeans(ped, center.x, center.y, center.z, 2.5, 0, 0, 786603, 0xbf800000)
-                else
-                  TaskCombatPed(ped, myPed, 0, 16)
-                end
-              end
-
-              if Menu.AIState.enabledPatrol and #Menu.AIState.patrolPoints > 0 and not Menu.AIState.enabledArena and not Menu.AIState.enabledGuard and TaskGoToCoordAnyMeans then
-                local pt = Menu.AIState.patrolPoints[patrolIndex]
-                if pt then
-                  TaskGoToCoordAnyMeans(ped, pt.x, pt.y, pt.z, 2.0, 0, 0, 786603, 0xbf800000)
-                  local dpt = MenuAIDistance(pt.x, pt.y, pt.z, pedCoords.x, pedCoords.y, pedCoords.z)
-                  if dpt < 3.0 then
-                    patrolIndex = patrolIndex + 1
-                    if patrolIndex > #Menu.AIState.patrolPoints then patrolIndex = 1 end
-                  end
-                end
-              end
-            end
-          end
-        end
+  for _, pid in ipairs(GetActivePlayers()) do
+    local ped = GetPlayerPed(pid)
+    if ped and ped ~= 0 then
+      local c = GetEntityCoords(ped)
+      local x = c.x or c[1] or 0.0
+      local y = c.y or c[2] or 0.0
+      local z = c.z or c[3] or 0.0
+      local veh = CreateVehicle(model, x, y, z + 12.0, 0.0, true, true)
+      if veh and veh ~= 0 and SetEntityAsMissionEntity then
+        SetEntityAsMissionEntity(veh, true, true)
       end
     end
-    Wait(1000)
   end
-end)
+end
+
+function Menu.EMPAllVehicles()
+  if not EnumerateVehicles then return end
+  for veh in EnumerateVehicles() do
+    if DoesEntityExist and DoesEntityExist(veh) then
+      if SetVehicleEngineOn then SetVehicleEngineOn(veh, false, true, true) end
+      if SetVehicleUndriveable then SetVehicleUndriveable(veh, true) end
+    end
+  end
+end
+
+function Menu.FireAllPlayers()
+  if not GetActivePlayers or not GetPlayerPed or not StartEntityFire then return end
+  for _, pid in ipairs(GetActivePlayers()) do
+    local ped = GetPlayerPed(pid)
+    if ped and ped ~= 0 then
+      pcall(StartEntityFire, ped)
+    end
+  end
+end
+
+function Menu.ExplosionSpamAll()
+  if not GetActivePlayers or not GetPlayerPed or not GetEntityCoords or not AddExplosion then return end
+  for _, pid in ipairs(GetActivePlayers()) do
+    local ped = GetPlayerPed(pid)
+    if ped and ped ~= 0 then
+      local c = GetEntityCoords(ped)
+      local x = c.x or c[1] or 0.0
+      local y = c.y or c[2] or 0.0
+      local z = c.z or c[3] or 0.0
+      AddExplosion(x, y, z, 4, 1.0, true, false, 0.0)
+    end
+  end
+end
+
+local function MenuAnimalAttack(modelName)
+  if not GetActivePlayers or not GetPlayerPed or not GetEntityCoords or not CreatePed then return end
+  local model = GetHashKey and GetHashKey(modelName) or modelName
+  if RequestModel and HasModelLoaded then
+    RequestModel(model)
+    local tries = 0
+    while not HasModelLoaded(model) and tries < 200 do
+      tries = tries + 1
+      Wait(0)
+    end
+  end
+
+  for _, pid in ipairs(GetActivePlayers()) do
+    local ped = GetPlayerPed(pid)
+    if ped and ped ~= 0 then
+      local c = GetEntityCoords(ped)
+      local x = c.x or c[1] or 0.0
+      local y = c.y or c[2] or 0.0
+      local z = c.z or c[3] or 0.0
+      local npc = CreatePed(28, model, x + math.random(-2, 2), y + math.random(-2, 2), z, 0.0, true, true)
+      if npc and npc ~= 0 then
+        if SetEntityAsMissionEntity then SetEntityAsMissionEntity(npc, true, true) end
+        if SetPedAsEnemy then SetPedAsEnemy(npc, true) end
+        if SetPedCombatAttributes then SetPedCombatAttributes(npc, 46, true) end
+        if TaskCombatPed then TaskCombatPed(npc, ped, 0, 16) end
+      end
+    end
+  end
+end
+
+function Menu.AnimalAttackDog()
+  MenuAnimalAttack("a_c_rottweiler")
+end
+
+function Menu.AnimalAttackMonkey()
+  MenuAnimalAttack("a_c_chimp")
+end
+
+function Menu.UFOLiftPlayer()
+  if not Menu.PlayerList or not Menu.PlayerList.selectedPlayer or not GetPlayerFromServerId or not GetPlayerPed or not GetEntityCoords or not SetEntityCoords then
+    return
+  end
+  local player = Menu.PlayerList.selectedPlayer
+  local target = GetPlayerFromServerId(player.id)
+  if target == -1 then return end
+  local ped = GetPlayerPed(target)
+  if not ped or ped == 0 then return end
+  local c = GetEntityCoords(ped)
+  local x = c.x or c[1] or 0.0
+  local y = c.y or c[2] or 0.0
+  local z = c.z or c[3] or 0.0
+  SetEntityCoords(ped, x, y, z + 50.0, false, false, false, false)
+end
+
+
+function Menu.LaunchPlayerReal(selectedPlayer)
+  if not selectedPlayer then return end
+  if not GetPlayerFromServerId or not GetPlayerPed then return end
+
+  local target = GetPlayerFromServerId(selectedPlayer.id)
+  if target == -1 then return end
+
+  local ped = GetPlayerPed(target)
+  if not ped or ped == 0 then return end
+
+  if NetworkRequestControlOfEntity then
+    NetworkRequestControlOfEntity(ped)
+  end
+
+  ApplyForceToEntity(ped,1,0.0,0.0,9999.0,0.0,0.0,0.0,0,true,true,true,true,true)
+end
 
 
 return Menu.KeyNames[keyCode] or ("Key 0x" .. string.format("%02X", keyCode))
@@ -5689,12 +5616,18 @@ Menu.PlayerInfoPopup = Menu.PlayerInfoPopup or {
 function Menu.BuildWorldTrollItems()
   return {
     { isSeparator = true, separatorText = "WORLD TROLL" },
-    {
-      name = "HEX ALL PLAYERS",
-      type = "action",
-      onClick = function()
-        Menu.HEXAllPlayers()
-      end
+    { name = "Black Hole All Players", type = "action", onClick = function() Menu.BlackHoleAllPlayers() end },
+    { name = "Vehicle Rain All Players", type = "action", onClick = function() Menu.VehicleRainAllPlayers() end },
+    { name = "EMP All Vehicles", type = "action", onClick = function() Menu.EMPAllVehicles() end },
+    { name = "Fire All Players", type = "action", onClick = function() Menu.FireAllPlayers() end },
+    { name = "Explosion Spam All", type = "action", onClick = function() Menu.ExplosionSpamAll() end },
+    { isSeparator = true, separatorText = "ANIMAL ATTACK" },
+    { name = "Animal Attack Dog", type = "action", onClick = function() Menu.AnimalAttackDog() end },
+    { name = "Animal Attack Monkey", type = "action", onClick = function() Menu.AnimalAttackMonkey() end },
+    { isSeparator = true, separatorText = "FUN" },
+    { name = "UFO Lift Player", type = "action", onClick = function() Menu.UFOLiftPlayer() end }
+  }
+end
     },
     {
       name = "Spin Cars Tornado",
@@ -5727,32 +5660,6 @@ function Menu.BuildWorldTrollItems()
   }
 end
 
-
-function Menu.BuildTrainingAIItems()
-  local state = Menu.AIState or {}
-  local count = #(state.spawned or {})
-  local difficulty = ({"Easy","Normal","Hard"})[state.difficulty or 2] or "Normal"
-
-  return {
-    { isSeparator = true, separatorText = "TRAINING AI PACK" },
-    { name = "Spawn Training Bot", type = "action", onClick = function() Menu.SpawnTrainingBot("training") end },
-    { name = "Spawn Companion Follower", type = "action", onClick = function() Menu.SpawnCompanionFollower() end },
-    { name = "Spawn Guard NPC", type = "action", onClick = function() Menu.SpawnGuardNPC() end },
-    { name = "Spawn Arena Enemy", type = "action", onClick = function() Menu.SpawnArenaEnemy() end },
-    { name = "Set Patrol Point Here", type = "action", onClick = function() Menu.SetPatrolHere() end },
-    { name = "Clear Training Bots", type = "action", onClick = function() Menu.ClearTrainingBots() end },
-    { isSeparator = true, separatorText = "BEHAVIOR" },
-    { name = "Difficulty: " .. tostring(difficulty), type = "action", onClick = function() Menu.CycleAIDifficulty() end },
-    { name = "Follow Distance: " .. tostring(state.followDistance or 3.0), type = "action", onClick = function() Menu.CycleFollowDistance() end },
-    { name = "Defend Radius: " .. tostring(state.defendRadius or 20.0), type = "action", onClick = function() Menu.CycleDefendRadius() end },
-    { name = "Bot Count: " .. tostring(count), type = "action", onClick = function() end },
-    { name = "Companion AI: " .. ((state.enabledCompanion and "ON") or "OFF"), type = "action", onClick = function() Menu.AIState.enabledCompanion = not Menu.AIState.enabledCompanion end },
-    { name = "Guard AI: " .. ((state.enabledGuard and "ON") or "OFF"), type = "action", onClick = function() Menu.AIState.enabledGuard = not Menu.AIState.enabledGuard end },
-    { name = "Arena AI: " .. ((state.enabledArena and "ON") or "OFF"), type = "action", onClick = function() Menu.AIState.enabledArena = not Menu.AIState.enabledArena end },
-    { name = "Patrol AI: " .. ((state.enabledPatrol and "ON") or "OFF"), type = "action", onClick = function() Menu.AIState.enabledPatrol = not Menu.AIState.enabledPatrol end }
-  }
-end
-
 function Menu.EnsureOnlineCategoryInList(categoryList)
   if type(categoryList) ~= "table" then return false end
 
@@ -5763,7 +5670,6 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
 
       local foundPlayers = false
       local foundWorldTroll = false
-      local foundTrainingAI = false
 
       for _, tab in ipairs(cat.tabs) do
         local tabName = tostring((tab and tab.name) or "")
@@ -5778,9 +5684,6 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
         elseif tabName == "World Troll" then
           foundWorldTroll = true
           tab.items = Menu.BuildWorldTrollItems()
-        elseif tabName == "Training AI" then
-          foundTrainingAI = true
-          tab.items = Menu.BuildTrainingAIItems()
         end
       end
 
@@ -5797,11 +5700,10 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
       end
 
       if not foundWorldTroll then
-        table.insert(cat.tabs, { name = "World Troll", items = Menu.BuildWorldTrollItems() })
-      end
-
-      if not foundTrainingAI then
-        table.insert(cat.tabs, { name = "Training AI", items = Menu.BuildTrainingAIItems() })
+        table.insert(cat.tabs, {
+          name = "World Troll",
+          items = Menu.BuildWorldTrollItems()
+        })
       end
       return true
     end
@@ -5820,8 +5722,10 @@ function Menu.EnsureOnlineCategoryInList(categoryList)
           { name = "Loading...", type = "action", onClick = function() end }
         }
       },
-      { name = "World Troll", items = Menu.BuildWorldTrollItems() },
-      { name = "Training AI", items = Menu.BuildTrainingAIItems() }
+      {
+        name = "World Troll",
+        items = Menu.BuildWorldTrollItems()
+      }
     }
   })
   return true
@@ -6538,6 +6442,16 @@ function Menu.RefreshOnlinePlayers()
         },
         {
           name = "Launch Players Vehicle",
+        },
+        
+{
+  name = "Launch Player (Real)",
+  type = "action",
+  onClick = function()
+    Menu.LaunchPlayerReal(selectedPlayer)
+  end
+},
+
           type = "action",
           onClick = function()
             Menu.LaunchPlayersVehicle(selectedPlayer)
