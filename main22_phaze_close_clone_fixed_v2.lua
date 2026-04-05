@@ -2212,8 +2212,8 @@ Menu.KeyNames = {
 }
 
 function Menu.GetKeyName(keyCode)
-  
-
+  return Menu.KeyNames[keyCode] or "Unknown"
+end
 
 Menu.HexAllIncludeSelf = Menu.HexAllIncludeSelf or false
 
