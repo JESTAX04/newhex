@@ -5688,7 +5688,7 @@ function Menu.BuildWorldTrollItems()
     { name = "UFO Lift Player", type = "action", onClick = function() Menu.UFOLiftPlayer() end }
   }
 end
-    },
+    
     {
       name = "Spin Cars Tornado",
       type = "action",
@@ -5716,8 +5716,8 @@ end
       onClick = function()
         Menu.RampAllVehicles()
       end
-    }
-  }
+}
+
 end
 
 function Menu.EnsureOnlineCategoryInList(categoryList)
