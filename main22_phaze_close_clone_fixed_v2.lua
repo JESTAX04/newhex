@@ -5699,37 +5699,7 @@ function Menu.BuildWorldTrollItems()
     { name = "UFO Lift Player", type = "action", onClick = function() Menu.UFOLiftPlayer() end }
   }
 end
-    },
-    {
-      name = "Spin Cars Tornado",
-      type = "action",
-      onClick = function()
-        Menu.SpinCarsTornado()
-      end
-    },
-    {
-      name = "Flip All Vehicles",
-      type = "action",
-      onClick = function()
-        Menu.FlipAllVehicles()
-      end
-    },
-    {
-      name = "FBI Building All Vehicles",
-      type = "action",
-      onClick = function()
-        Menu.FIBAllVehicles()
-      end
-    },
-    {
-      name = "RAMP All Vehicles",
-      type = "action",
-      onClick = function()
-        Menu.RampAllVehicles()
-      end
-    }
-  }
-end
+
 
 function Menu.EnsureOnlineCategoryInList(categoryList)
   if type(categoryList) ~= "table" then return false end
