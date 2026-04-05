@@ -5687,7 +5687,6 @@ function Menu.BuildWorldTrollItems()
     { isSeparator = true, separatorText = "FUN" },
     { name = "UFO Lift Player", type = "action", onClick = function() Menu.UFOLiftPlayer() end }
   }
-end
     
     {
       name = "Spin Cars Tornado",
