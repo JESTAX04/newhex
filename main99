@@ -3181,9 +3181,6 @@ function Menu.LaunchPlayerReal(selectedPlayer)
   )
 end
 
-return Menu.KeyNames[keyCode] or ("Key 0x" .. string.format("%02X", keyCode))
-end
-
 function Menu.GetMousePosition()
   if Susano and Susano.GetCursorPos then
     local cursorPos = Susano.GetCursorPos()
