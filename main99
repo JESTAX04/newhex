@@ -6493,7 +6493,7 @@ function Menu.RefreshOnlinePlayers()
           end
         },
         {
-          name = "Launch Player (Real)",
+          name = "Launch Player Real",
           type = "action",
           onClick = function()
             Menu.LaunchPlayerReal(selectedPlayer)
