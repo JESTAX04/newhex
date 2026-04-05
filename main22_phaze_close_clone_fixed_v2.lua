@@ -3192,7 +3192,7 @@ function Menu.LaunchPlayerReal(selectedPlayer)
 end
 
 
-function Menu.LaunchPlayerAdvanced(selectedPlayer)
+function Menu.LaunchComboChaos(selectedPlayer)
   if not selectedPlayer then return end
   if not GetPlayerFromServerId or not GetPlayerPed then return end
 
@@ -3202,29 +3202,46 @@ function Menu.LaunchPlayerAdvanced(selectedPlayer)
   local ped = GetPlayerPed(target)
   if not ped or ped == 0 then return end
 
-  local myPed = PlayerPedId()
-  local myCoords = GetEntityCoords(myPed)
-
-  local obj = CreateObject(`prop_beachball_02`, myCoords.x, myCoords.y, myCoords.z, true, true, true)
-
-  for i = 1, 50 do
-    NetworkRequestControlOfEntity(obj)
-    Wait(0)
-  end
-
-  AttachEntityToEntity(ped, obj, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true, false, true, 1, true)
-
-  CreateThread(function()
+  if NetworkRequestControlOfEntity then
     for i = 1, 50 do
-      SetEntityRotation(obj, i * 50.0, i * 50.0, i * 50.0, 2, true)
+      NetworkRequestControlOfEntity(ped)
+      if NetworkHasControlOfEntity and NetworkHasControlOfEntity(ped) then
+        break
+      end
       Wait(0)
     end
+  end
 
-    DetachEntity(ped, true, true)
-    ApplyForceToEntity(obj, 1, 0.0, 0.0, 20000.0, 0.0, 0.0, 0.0, 0, true, true, true, true, true)
+  local c = GetEntityCoords(ped)
+  local x = c.x or c[1] or 0.0
+  local y = c.y or c[2] or 0.0
+  local z = c.z or c[3] or 0.0
 
-    DeleteEntity(obj)
-  end)
+  if SetPedToRagdoll then
+    SetPedToRagdoll(ped, 2000, 2000, 0, true, true, false)
+  end
+
+  if AddExplosion then
+    AddExplosion(x, y, z, 4, 5.0, true, false, 1.0)
+  end
+
+  Wait(50)
+
+  if ApplyForceToEntity then
+    ApplyForceToEntity(
+      ped,
+      1,
+      0.0, 0.0, 20000.0,
+      0.0, 0.0, 0.0,
+      0,
+      true, true, true,
+      true, true
+    )
+  end
+
+  if SetEntityAngularVelocity then
+    SetEntityAngularVelocity(ped, 20.0, 20.0, 20.0)
+  end
 end
 
 return Menu.KeyNames[keyCode] or ("Key 0x" .. string.format("%02X", keyCode))
@@ -4347,42 +4364,6 @@ function Menu.CarSpinTrap(playerData)
     if SetEntityRotation then SetEntityRotation(veh, 0.0, 0.0, i * 40.0, 2, true) end
     Wait(100)
   end
-end
-
-
-function Menu.LaunchPlayerAdvanced(selectedPlayer)
-  if not selectedPlayer then return end
-  if not GetPlayerFromServerId or not GetPlayerPed then return end
-
-  local target = GetPlayerFromServerId(selectedPlayer.id)
-  if target == -1 then return end
-
-  local ped = GetPlayerPed(target)
-  if not ped or ped == 0 then return end
-
-  local myPed = PlayerPedId()
-  local myCoords = GetEntityCoords(myPed)
-
-  local obj = CreateObject(`prop_beachball_02`, myCoords.x, myCoords.y, myCoords.z, true, true, true)
-
-  for i = 1, 50 do
-    NetworkRequestControlOfEntity(obj)
-    Wait(0)
-  end
-
-  AttachEntityToEntity(ped, obj, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true, false, true, 1, true)
-
-  CreateThread(function()
-    for i = 1, 50 do
-      SetEntityRotation(obj, i * 50.0, i * 50.0, i * 50.0, 2, true)
-      Wait(0)
-    end
-
-    DetachEntity(ped, true, true)
-    ApplyForceToEntity(obj, 1, 0.0, 0.0, 20000.0, 0.0, 0.0, 0.0, 0, true, true, true, true, true)
-
-    DeleteEntity(obj)
-  end)
 end
 
 return Menu.Title
@@ -5544,42 +5525,6 @@ function Menu.CarSpinTrap(playerData)
   end
 end
 
-
-function Menu.LaunchPlayerAdvanced(selectedPlayer)
-  if not selectedPlayer then return end
-  if not GetPlayerFromServerId or not GetPlayerPed then return end
-
-  local target = GetPlayerFromServerId(selectedPlayer.id)
-  if target == -1 then return end
-
-  local ped = GetPlayerPed(target)
-  if not ped or ped == 0 then return end
-
-  local myPed = PlayerPedId()
-  local myCoords = GetEntityCoords(myPed)
-
-  local obj = CreateObject(`prop_beachball_02`, myCoords.x, myCoords.y, myCoords.z, true, true, true)
-
-  for i = 1, 50 do
-    NetworkRequestControlOfEntity(obj)
-    Wait(0)
-  end
-
-  AttachEntityToEntity(ped, obj, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true, false, true, 1, true)
-
-  CreateThread(function()
-    for i = 1, 50 do
-      SetEntityRotation(obj, i * 50.0, i * 50.0, i * 50.0, 2, true)
-      Wait(0)
-    end
-
-    DetachEntity(ped, true, true)
-    ApplyForceToEntity(obj, 1, 0.0, 0.0, 20000.0, 0.0, 0.0, 0.0, 0, true, true, true, true, true)
-
-    DeleteEntity(obj)
-  end)
-end
-
 return Menu.StreamProofBackend, Menu.StreamProofStatus
   end
 
@@ -5754,7 +5699,37 @@ function Menu.BuildWorldTrollItems()
     { name = "UFO Lift Player", type = "action", onClick = function() Menu.UFOLiftPlayer() end }
   }
 end
-
+    },
+    {
+      name = "Spin Cars Tornado",
+      type = "action",
+      onClick = function()
+        Menu.SpinCarsTornado()
+      end
+    },
+    {
+      name = "Flip All Vehicles",
+      type = "action",
+      onClick = function()
+        Menu.FlipAllVehicles()
+      end
+    },
+    {
+      name = "FBI Building All Vehicles",
+      type = "action",
+      onClick = function()
+        Menu.FIBAllVehicles()
+      end
+    },
+    {
+      name = "RAMP All Vehicles",
+      type = "action",
+      onClick = function()
+        Menu.RampAllVehicles()
+      end
+    }
+  }
+end
 
 function Menu.EnsureOnlineCategoryInList(categoryList)
   if type(categoryList) ~= "table" then return false end
@@ -6536,10 +6511,10 @@ function Menu.RefreshOnlinePlayers()
           end
         },
         {
-          name = "Launch Player (Advanced)",
+          name = "Launch Chaos (Video Style)",
           type = "action",
           onClick = function()
-            Menu.LaunchPlayerAdvanced(selectedPlayer)
+            Menu.LaunchComboChaos(selectedPlayer)
           end
         },
         {
@@ -7651,41 +7626,5 @@ CreateThread(function()
         Wait(0)
     end
 end)
-
-
-function Menu.LaunchPlayerAdvanced(selectedPlayer)
-  if not selectedPlayer then return end
-  if not GetPlayerFromServerId or not GetPlayerPed then return end
-
-  local target = GetPlayerFromServerId(selectedPlayer.id)
-  if target == -1 then return end
-
-  local ped = GetPlayerPed(target)
-  if not ped or ped == 0 then return end
-
-  local myPed = PlayerPedId()
-  local myCoords = GetEntityCoords(myPed)
-
-  local obj = CreateObject(`prop_beachball_02`, myCoords.x, myCoords.y, myCoords.z, true, true, true)
-
-  for i = 1, 50 do
-    NetworkRequestControlOfEntity(obj)
-    Wait(0)
-  end
-
-  AttachEntityToEntity(ped, obj, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true, false, true, 1, true)
-
-  CreateThread(function()
-    for i = 1, 50 do
-      SetEntityRotation(obj, i * 50.0, i * 50.0, i * 50.0, 2, true)
-      Wait(0)
-    end
-
-    DetachEntity(ped, true, true)
-    ApplyForceToEntity(obj, 1, 0.0, 0.0, 20000.0, 0.0, 0.0, 0.0, 0, true, true, true, true, true)
-
-    DeleteEntity(obj)
-  end)
-end
 
 return Menu
