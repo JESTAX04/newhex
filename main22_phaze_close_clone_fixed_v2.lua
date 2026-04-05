@@ -3158,7 +3158,7 @@ end
 
 function Menu.LaunchPlayerReal(selectedPlayer)
   if not selectedPlayer then return end
-  if not GetPlayerFromServerId or not GetPlayerPed then return end
+  if not GetPlayerFromServerId or not GetPlayerPed or not ApplyForceToEntity then return end
 
   local target = GetPlayerFromServerId(selectedPlayer.id)
   if target == -1 then return end
@@ -3167,7 +3167,17 @@ function Menu.LaunchPlayerReal(selectedPlayer)
   if not ped or ped == 0 then return end
 
   if NetworkRequestControlOfEntity then
-    NetworkRequestControlOfEntity(ped)
+    for i = 1, 12 do
+      NetworkRequestControlOfEntity(ped)
+      if NetworkHasControlOfEntity and NetworkHasControlOfEntity(ped) then
+        break
+      end
+      Wait(0)
+    end
+  end
+
+  if SetPedToRagdoll then
+    SetPedToRagdoll(ped, 1500, 1500, 0, true, true, false)
   end
 
   ApplyForceToEntity(
@@ -4301,32 +4311,6 @@ function Menu.CarSpinTrap(playerData)
     if SetEntityRotation then SetEntityRotation(veh, 0.0, 0.0, i * 40.0, 2, true) end
     Wait(100)
   end
-end
-
-
-function Menu.LaunchPlayerReal(selectedPlayer)
-  if not selectedPlayer then return end
-  if not GetPlayerFromServerId or not GetPlayerPed then return end
-
-  local target = GetPlayerFromServerId(selectedPlayer.id)
-  if target == -1 then return end
-
-  local ped = GetPlayerPed(target)
-  if not ped or ped == 0 then return end
-
-  if NetworkRequestControlOfEntity then
-    NetworkRequestControlOfEntity(ped)
-  end
-
-  ApplyForceToEntity(
-    ped,
-    1,
-    0.0, 0.0, 9999.0,
-    0.0, 0.0, 0.0,
-    0,
-    true, true, true,
-    true, true
-  )
 end
 
 return Menu.Title
@@ -5486,32 +5470,6 @@ function Menu.CarSpinTrap(playerData)
     if SetEntityRotation then SetEntityRotation(veh, 0.0, 0.0, i * 40.0, 2, true) end
     Wait(100)
   end
-end
-
-
-function Menu.LaunchPlayerReal(selectedPlayer)
-  if not selectedPlayer then return end
-  if not GetPlayerFromServerId or not GetPlayerPed then return end
-
-  local target = GetPlayerFromServerId(selectedPlayer.id)
-  if target == -1 then return end
-
-  local ped = GetPlayerPed(target)
-  if not ped or ped == 0 then return end
-
-  if NetworkRequestControlOfEntity then
-    NetworkRequestControlOfEntity(ped)
-  end
-
-  ApplyForceToEntity(
-    ped,
-    1,
-    0.0, 0.0, 9999.0,
-    0.0, 0.0, 0.0,
-    0,
-    true, true, true,
-    true, true
-  )
 end
 
 return Menu.StreamProofBackend, Menu.StreamProofStatus
@@ -7608,31 +7566,5 @@ CreateThread(function()
         Wait(0)
     end
 end)
-
-
-function Menu.LaunchPlayerReal(selectedPlayer)
-  if not selectedPlayer then return end
-  if not GetPlayerFromServerId or not GetPlayerPed then return end
-
-  local target = GetPlayerFromServerId(selectedPlayer.id)
-  if target == -1 then return end
-
-  local ped = GetPlayerPed(target)
-  if not ped or ped == 0 then return end
-
-  if NetworkRequestControlOfEntity then
-    NetworkRequestControlOfEntity(ped)
-  end
-
-  ApplyForceToEntity(
-    ped,
-    1,
-    0.0, 0.0, 9999.0,
-    0.0, 0.0, 0.0,
-    0,
-    true, true, true,
-    true, true
-  )
-end
 
 return Menu
