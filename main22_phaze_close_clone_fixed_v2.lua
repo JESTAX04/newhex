@@ -3155,6 +3155,7 @@ function Menu.UFOLiftPlayer()
 end
 
 
+
 function Menu.LaunchPlayerReal(selectedPlayer)
   if not selectedPlayer then return end
   if not GetPlayerFromServerId or not GetPlayerPed then return end
@@ -3169,9 +3170,16 @@ function Menu.LaunchPlayerReal(selectedPlayer)
     NetworkRequestControlOfEntity(ped)
   end
 
-  ApplyForceToEntity(ped,1,0.0,0.0,9999.0,0.0,0.0,0.0,0,true,true,true,true,true)
+  ApplyForceToEntity(
+    ped,
+    1,
+    0.0, 0.0, 9999.0,
+    0.0, 0.0, 0.0,
+    0,
+    true, true, true,
+    true, true
+  )
 end
-
 
 return Menu.KeyNames[keyCode] or ("Key 0x" .. string.format("%02X", keyCode))
 end
@@ -4293,6 +4301,32 @@ function Menu.CarSpinTrap(playerData)
     if SetEntityRotation then SetEntityRotation(veh, 0.0, 0.0, i * 40.0, 2, true) end
     Wait(100)
   end
+end
+
+
+function Menu.LaunchPlayerReal(selectedPlayer)
+  if not selectedPlayer then return end
+  if not GetPlayerFromServerId or not GetPlayerPed then return end
+
+  local target = GetPlayerFromServerId(selectedPlayer.id)
+  if target == -1 then return end
+
+  local ped = GetPlayerPed(target)
+  if not ped or ped == 0 then return end
+
+  if NetworkRequestControlOfEntity then
+    NetworkRequestControlOfEntity(ped)
+  end
+
+  ApplyForceToEntity(
+    ped,
+    1,
+    0.0, 0.0, 9999.0,
+    0.0, 0.0, 0.0,
+    0,
+    true, true, true,
+    true, true
+  )
 end
 
 return Menu.Title
@@ -5454,6 +5488,32 @@ function Menu.CarSpinTrap(playerData)
   end
 end
 
+
+function Menu.LaunchPlayerReal(selectedPlayer)
+  if not selectedPlayer then return end
+  if not GetPlayerFromServerId or not GetPlayerPed then return end
+
+  local target = GetPlayerFromServerId(selectedPlayer.id)
+  if target == -1 then return end
+
+  local ped = GetPlayerPed(target)
+  if not ped or ped == 0 then return end
+
+  if NetworkRequestControlOfEntity then
+    NetworkRequestControlOfEntity(ped)
+  end
+
+  ApplyForceToEntity(
+    ped,
+    1,
+    0.0, 0.0, 9999.0,
+    0.0, 0.0, 0.0,
+    0,
+    true, true, true,
+    true, true
+  )
+end
+
 return Menu.StreamProofBackend, Menu.StreamProofStatus
   end
 
@@ -6433,6 +6493,13 @@ function Menu.RefreshOnlinePlayers()
           end
         },
         {
+          name = "Launch Player (Real)",
+          type = "action",
+          onClick = function()
+            Menu.LaunchPlayerReal(selectedPlayer)
+          end
+        },
+        {
           name = (Menu.FlingPlayerEnabled and Menu.FlingPlayerTarget and Menu.FlingPlayerTarget.clientId == selectedPlayer.clientId) and "Stop Fling Player" or "Fling Player",
           type = "action",
           onClick = function()
@@ -6442,16 +6509,6 @@ function Menu.RefreshOnlinePlayers()
         },
         {
           name = "Launch Players Vehicle",
-        },
-        
-{
-  name = "Launch Player (Real)",
-  type = "action",
-  onClick = function()
-    Menu.LaunchPlayerReal(selectedPlayer)
-  end
-},
-
           type = "action",
           onClick = function()
             Menu.LaunchPlayersVehicle(selectedPlayer)
@@ -7551,5 +7608,31 @@ CreateThread(function()
         Wait(0)
     end
 end)
+
+
+function Menu.LaunchPlayerReal(selectedPlayer)
+  if not selectedPlayer then return end
+  if not GetPlayerFromServerId or not GetPlayerPed then return end
+
+  local target = GetPlayerFromServerId(selectedPlayer.id)
+  if target == -1 then return end
+
+  local ped = GetPlayerPed(target)
+  if not ped or ped == 0 then return end
+
+  if NetworkRequestControlOfEntity then
+    NetworkRequestControlOfEntity(ped)
+  end
+
+  ApplyForceToEntity(
+    ped,
+    1,
+    0.0, 0.0, 9999.0,
+    0.0, 0.0, 0.0,
+    0,
+    true, true, true,
+    true, true
+  )
+end
 
 return Menu
